@@ -1,0 +1,843 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PK Analyzer — BE & IVIVC</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600;700;800&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg:#ffffff; --bg-s:#f9f9f8; --bg-h:#f4f4f2;
+  --bd:#e8e7e3; --bd2:#d4d3ce;
+  --tx:#1a1a18; --tx2:#6b6a65; --tx3:#9b9a96;
+  --ac:#2563eb; --ac-bg:#eff6ff; --ac2:#1d4ed8;
+  --gr:#16a34a; --gr-bg:#f0fdf4; --gr-bd:#bbf7d0;
+  --rd:#dc2626; --rd-bg:#fef2f2;
+  --am:#d97706; --am-bg:#fffbeb;
+  --sw:220px; --th:52px;
+  --mono:'DM Mono',monospace; --sans:'Geist',-apple-system,sans-serif;
+  --r:8px; --rs:5px;
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+html,body{height:100%;}
+body{font-family:var(--sans);background:var(--bg);color:var(--tx);font-size:14px;line-height:1.6;-webkit-font-smoothing:antialiased;}
+
+/* layout */
+.app{display:flex;height:100vh;overflow:hidden;}
+
+/* sidebar */
+.sidebar{width:var(--sw);flex-shrink:0;border-right:1px solid var(--bd);background:var(--bg-s);display:flex;flex-direction:column;overflow-y:auto;padding-bottom:24px;}
+.sb-logo{padding:18px 16px 14px;display:flex;align-items:center;gap:9px;border-bottom:1px solid var(--bd);margin-bottom:8px;}
+.sb-mark{width:28px;height:28px;background:var(--tx);border-radius:6px;display:flex;align-items:center;justify-content:center;color:#fff;font-size:11px;font-weight:700;letter-spacing:-.5px;}
+.sb-name{font-size:13.5px;font-weight:700;color:var(--tx);letter-spacing:-.2px;}
+.sb-sub{font-size:10px;color:var(--tx3);font-weight:400;display:block;margin-top:1px;}
+.sb-sec{padding:4px 8px;margin-bottom:2px;}
+.sb-lbl{font-size:10.5px;font-weight:600;color:var(--tx3);letter-spacing:.6px;text-transform:uppercase;padding:8px 8px 4px;}
+.ni{display:flex;align-items:center;gap:8px;padding:6px 8px;border-radius:var(--rs);cursor:pointer;color:var(--tx2);font-size:13px;font-weight:500;transition:background .12s,color .12s;user-select:none;}
+.ni:hover{background:var(--bg-h);color:var(--tx);}
+.ni.active{background:var(--ac-bg);color:var(--ac);font-weight:600;}
+.ni .ic{font-size:15px;width:20px;text-align:center;flex-shrink:0;}
+.ni .ns{margin-left:auto;font-size:10px;font-weight:600;color:var(--tx3);font-family:var(--mono);}
+.ni.active .ns{color:var(--ac);opacity:.6;}
+.sb-div{height:1px;background:var(--bd);margin:10px 16px;}
+
+/* content */
+.ca{flex:1;display:flex;flex-direction:column;overflow:hidden;}
+.tb{height:var(--th);border-bottom:1px solid var(--bd);display:flex;align-items:center;padding:0 32px;gap:12px;flex-shrink:0;}
+.tb-bc{font-size:13px;color:var(--tx3);display:flex;align-items:center;gap:6px;}
+.tb-act{margin-left:auto;display:flex;gap:8px;}
+.pg{flex:1;overflow-y:auto;padding:36px 40px 64px;}
+
+/* page header */
+.ph{margin-bottom:28px;}
+.ph h1{font-size:22px;font-weight:700;letter-spacing:-.4px;color:var(--tx);margin-bottom:3px;}
+.ph p{font-size:13px;color:var(--tx2);}
+
+/* section */
+.section{display:none;}.section.active{display:block;}
+
+/* card */
+.card{border:1px solid var(--bd);border-radius:var(--r);background:var(--bg);padding:20px 24px;margin-bottom:14px;}
+.ct{font-size:11.5px;font-weight:600;color:var(--tx3);text-transform:uppercase;letter-spacing:.5px;margin-bottom:14px;}
+
+/* form */
+label{display:block;font-size:12.5px;font-weight:600;color:var(--tx2);margin-bottom:5px;}
+input[type=text],input[type=number],select,textarea{width:100%;border:1px solid var(--bd2);border-radius:var(--rs);padding:8px 11px;font-size:13.5px;font-family:var(--sans);color:var(--tx);background:var(--bg);outline:none;transition:border-color .15s,box-shadow .15s;-webkit-appearance:none;}
+input:focus,select:focus,textarea:focus{border-color:var(--ac);box-shadow:0 0 0 3px rgba(37,99,235,.1);}
+.fg{display:flex;flex-direction:column;margin-bottom:12px;}
+.fgrid{display:grid;grid-template-columns:1fr 1fr;gap:14px;}
+
+/* btn */
+.btn{display:inline-flex;align-items:center;gap:6px;padding:8px 14px;border-radius:var(--rs);font-size:13px;font-weight:600;font-family:var(--sans);cursor:pointer;border:none;transition:all .14s;white-space:nowrap;}
+.bp{background:var(--tx);color:#fff;}.bp:hover{background:#333;}
+.ba{background:var(--ac);color:#fff;}.ba:hover{background:var(--ac2);}
+.bg{background:transparent;border:1px solid var(--bd2);color:var(--tx2);}.bg:hover{background:var(--bg-h);color:var(--tx);}
+.bs{padding:5px 10px;font-size:12px;}
+.br{display:flex;gap:8px;margin-top:14px;flex-wrap:wrap;}
+
+/* stats */
+.sgrid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:14px;}
+.sb{border:1px solid var(--bd);border-radius:var(--r);padding:16px 20px;}
+.sb.hi{border-color:#bfdbfe;background:var(--ac-bg);}
+.sb .sl{font-size:11px;font-weight:600;color:var(--tx3);margin-bottom:6px;text-transform:uppercase;letter-spacing:.3px;}
+.sb .sv{font-size:26px;font-weight:700;font-family:var(--mono);color:var(--tx);letter-spacing:-.5px;line-height:1.1;}
+.sb.hi .sv{color:var(--ac);}
+.sb .ss{font-size:11px;color:var(--tx3);margin-top:3px;}
+
+/* result table */
+.rb{border:1px solid var(--bd);border-radius:var(--r);overflow:hidden;margin-bottom:14px;}
+.rh{background:var(--bg-s);border-bottom:1px solid var(--bd);padding:10px 18px;font-size:11.5px;font-weight:600;color:var(--tx2);text-transform:uppercase;letter-spacing:.5px;}
+.rt{width:100%;border-collapse:collapse;}
+.rt th{padding:9px 16px;font-size:11px;font-weight:600;color:var(--tx3);text-align:left;border-bottom:1px solid var(--bd);background:var(--bg-s);}
+.rt td{padding:12px 16px;font-size:13.5px;border-bottom:1px solid var(--bd);color:var(--tx);}
+.rt tr:last-child td{border-bottom:none;}
+.rt td:first-child{font-weight:600;}
+
+/* ci bar */
+.ciw{display:flex;align-items:center;gap:8px;}
+.cit{position:relative;width:130px;height:5px;background:var(--bd);border-radius:3px;flex-shrink:0;}
+.cif{position:absolute;top:0;height:100%;background:var(--ac);border-radius:3px;}
+.cil{font-size:11px;color:var(--tx3);font-family:var(--mono);}
+
+/* badge */
+.badge{display:inline-flex;align-items:center;gap:4px;padding:3px 9px;border-radius:4px;font-size:11.5px;font-weight:700;}
+.bp2{background:var(--gr-bg);color:var(--gr);border:1px solid var(--gr-bd);}
+.bf{background:var(--rd-bg);color:var(--rd);border:1px solid #fecaca;}
+
+/* outcome */
+.oc{border-radius:var(--r);padding:22px 26px;margin-bottom:14px;display:flex;align-items:center;gap:16px;}
+.oc.pass{background:var(--gr-bg);border:1px solid var(--gr-bd);}
+.oc.fail{background:var(--rd-bg);border:1px solid #fecaca;}
+.oi{font-size:30px;flex-shrink:0;}
+.ot{font-size:16px;font-weight:700;margin-bottom:2px;}
+.oc.pass .ot{color:var(--gr);}
+.oc.fail .ot{color:var(--rd);}
+.od{font-size:13px;color:var(--tx2);}
+
+/* upload */
+.uz{border:1.5px dashed var(--bd2);border-radius:var(--r);padding:28px;text-align:center;cursor:pointer;transition:all .15s;background:var(--bg-s);}
+.uz:hover,.uz.drag{border-color:var(--ac);background:var(--ac-bg);}
+.uz .uzi{font-size:28px;margin-bottom:8px;}
+.uz p{font-size:13px;color:var(--tx2);}
+.uz span{color:var(--ac);font-weight:600;}
+.uz .uzh{font-size:11.5px;color:var(--tx3);margin-top:5px;}
+
+/* data table */
+.dt{width:100%;border-collapse:collapse;font-size:12.5px;}
+.dt th{padding:7px 12px;font-size:11px;font-weight:600;color:var(--tx3);text-align:center;border-bottom:1px solid var(--bd);text-transform:uppercase;letter-spacing:.4px;background:var(--bg-s);}
+.dt td{padding:6px 12px;text-align:center;border-bottom:1px solid var(--bd);font-family:var(--mono);}
+.dt tr:last-child td{border-bottom:none;}
+.dt tr:hover td{background:var(--bg-h);}
+.dt input{width:76px;padding:3px 6px;border:1px solid var(--bd2);border-radius:4px;font-size:12px;text-align:center;font-family:var(--mono);}
+
+/* itabs */
+.it{display:flex;gap:2px;border-bottom:1px solid var(--bd);margin-bottom:20px;}
+.itb{padding:8px 14px;font-size:13px;font-weight:500;cursor:pointer;color:var(--tx3);border-bottom:2px solid transparent;margin-bottom:-1px;transition:all .12s;}
+.itb:hover{color:var(--tx);}
+.itb.active{color:var(--ac);border-bottom-color:var(--ac);font-weight:600;}
+
+/* subject grid */
+.sg{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-top:14px;}
+.sc{border:1px solid var(--bd);border-radius:var(--r);padding:12px 12px 8px;background:var(--bg);}
+.sc canvas{width:100%!important;height:80px!important;}
+.sn{font-size:11.5px;font-weight:700;display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;}
+.sp{font-size:9.5px;font-weight:700;padding:1px 6px;border-radius:3px;font-family:var(--mono);}
+.str{background:#dbeafe;color:#1d4ed8;}.srt{background:#fce7f3;color:#9d174d;}
+.ss2{display:flex;justify-content:space-between;font-size:10.5px;color:var(--tx3);margin-top:6px;font-family:var(--mono);}
+
+/* formula */
+.fm{background:var(--bg-s);border:1px solid var(--bd);border-radius:var(--rs);padding:12px 16px;font-family:var(--mono);font-size:12px;color:var(--tx2);margin:10px 0;}
+
+/* stat list */
+.sri{display:flex;justify-content:space-between;padding:9px 0;border-bottom:1px solid var(--bd);font-size:13px;}
+.sri:last-child{border-bottom:none;}
+.sri .sk{color:var(--tx2);}
+.sri .sv2{font-weight:600;font-family:var(--mono);}
+
+/* notice */
+.nt{background:var(--am-bg);border:1px solid #fde68a;border-radius:var(--rs);padding:10px 14px;font-size:12.5px;color:#92400e;display:flex;gap:8px;margin-top:10px;}
+.ni2{background:var(--ac-bg);border-color:#bfdbfe;color:#1e40af;}
+.ns2{background:var(--gr-bg);border-color:var(--gr-bd);color:#166534;}
+
+/* sample cards */
+.sog{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+.so{border:1.5px solid var(--bd);border-radius:var(--r);padding:16px 18px;cursor:pointer;transition:all .14s;}
+.so:hover{border-color:var(--ac);background:var(--ac-bg);}
+.soi{font-size:22px;margin-bottom:7px;}
+.sot{font-size:13px;font-weight:700;margin-bottom:3px;}
+.sod{font-size:12px;color:var(--tx3);}
+
+/* 2col */
+.tc{display:grid;grid-template-columns:1fr 1fr;gap:16px;}
+.tc3{display:grid;grid-template-columns:1.8fr 1fr;gap:16px;}
+
+/* empty state */
+.es{text-align:center;padding:48px 24px;color:var(--tx3);}
+.esi{font-size:36px;margin-bottom:10px;}
+.es h3{font-size:14px;font-weight:600;color:var(--tx2);margin-bottom:5px;}
+.es p{font-size:13px;}
+
+::-webkit-scrollbar{width:5px;height:5px;}
+::-webkit-scrollbar-thumb{background:var(--bd2);border-radius:3px;}
+.mt8{margin-top:8px;}.mt16{margin-top:16px;}.mb14{margin-bottom:14px;}
+.mono{font-family:var(--mono);}
+
+@media(max-width:768px){
+  .sidebar{display:none;}
+  .sgrid{grid-template-columns:1fr 1fr;}
+  .sg{grid-template-columns:1fr 1fr;}
+  .tc,.tc3,.fgrid{grid-template-columns:1fr;}
+  .pg{padding:20px 16px 48px;}
+}
+</style>
+</head>
+<body>
+<div class="app">
+
+<!-- SIDEBAR -->
+<nav class="sidebar">
+  <div class="sb-logo">
+    <div class="sb-mark">PK</div>
+    <div>
+      <div class="sb-name">PK Analyzer</div>
+      <span class="sb-sub">BE &amp; IVIVC Platform</span>
+    </div>
+  </div>
+  <div class="sb-sec">
+    <div class="sb-lbl">워크플로우</div>
+    <div class="ni active" onclick="nav('s1',this,'표본수 계산기','2×2 crossover BE 시험 표본수 산출')">
+      <span class="ic">🔢</span><span>표본수 계산기</span><span class="ns">01</span>
+    </div>
+    <div class="ni" onclick="nav('s2',this,'데이터 입력','농도-시간 PK 데이터 입력')">
+      <span class="ic">📥</span><span>데이터 입력</span><span class="ns">02</span>
+    </div>
+    <div class="ni" onclick="nav('s3',this,'동등성 판정','90% CI 기반 생물학적동등성 판정')">
+      <span class="ic">⚖️</span><span>동등성 판정</span><span class="ns">03</span>
+    </div>
+    <div class="ni" onclick="nav('s4',this,'시각화','평균 및 개별 PK 프로파일')">
+      <span class="ic">📈</span><span>시각화</span><span class="ns">04</span>
+    </div>
+    <div class="sb-div"></div>
+    <div class="sb-lbl">IVIVC</div>
+    <div class="ni" onclick="nav('s5',this,'IVIVC 분석','Wagner-Nelson Deconvolution')">
+      <span class="ic">🔬</span><span>IVIVC 분석</span><span class="ns">05</span>
+    </div>
+  </div>
+  <div style="margin-top:auto;padding:16px 16px 0;">
+    <div style="font-size:11px;color:var(--tx3);line-height:1.7;">모든 계산은 브라우저 내에서만 처리됩니다.<br>데이터가 서버로 전송되지 않습니다.</div>
+  </div>
+</nav>
+
+<!-- CONTENT -->
+<div class="ca">
+  <div class="tb">
+    <div class="tb-bc">
+      <span style="color:var(--tx3)">PK Analyzer</span>
+      <span style="color:var(--tx3)">›</span>
+      <span id="ttl" style="color:var(--tx);font-weight:600;">표본수 계산기</span>
+    </div>
+    <span id="tdesc" style="font-size:12px;color:var(--tx3);margin-left:4px;">2×2 crossover BE 시험 표본수 산출</span>
+    <div class="tb-act">
+      <button class="btn bg bs" onclick="alert('Ctrl+P → PDF 저장')">🖨 인쇄</button>
+    </div>
+  </div>
+
+  <div class="pg">
+
+  <!-- S1 -->
+  <div class="section active" id="s1">
+    <div class="ph"><h1>표본수 계산기</h1><p>2×2 crossover BE 시험 최소 대상자 수를 산출합니다.</p></div>
+    <div class="tc">
+      <div>
+        <div class="card">
+          <div class="ct">파라미터 설정</div>
+          <div class="fg"><label>계산 방식</label><select id="calcMethod"><option>90% 신뢰구간 기반</option><option>검정력 기반</option></select></div>
+          <div class="fg"><label>GMR (Geometric Mean Ratio)</label><input type="number" id="gmr" value="0.95" step="0.01" min="0.8" max="1.25"></div>
+          <div class="fg"><label>CV% (개체내 변이 계수)</label><input type="number" id="cv" value="28.5" step="0.5"></div>
+          <div class="fg mb14"><label>검정력 (Power)</label><select id="power"><option>80%</option><option selected>90%</option><option>95%</option></select></div>
+          <button class="btn bp" style="width:100%" onclick="calcSS()">계산하기</button>
+          <div class="nt mt8">💡 동일 성분의 다른 BE 시험 90% CI를 참고하면 CV 추정 정확도가 높아집니다.</div>
+        </div>
+      </div>
+      <div>
+        <div class="card" style="text-align:center;padding:32px 20px;border-color:#bfdbfe;background:var(--ac-bg);">
+          <div style="font-size:11px;font-weight:600;color:var(--ac);text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px;">필요 대상자 수</div>
+          <div id="nResult" style="font-size:76px;font-weight:800;color:var(--ac);font-family:var(--mono);line-height:1;">24</div>
+          <div style="font-size:12px;color:var(--tx3);margin-top:8px;">2×2 crossover design 기준</div>
+        </div>
+        <div class="card">
+          <div class="ct">계산 근거</div>
+          <div class="sri"><span class="sk">GMR</span><span class="sv2" id="bGmr">0.95</span></div>
+          <div class="sri"><span class="sk">CV%</span><span class="sv2" id="bCv">28.5%</span></div>
+          <div class="sri"><span class="sk">검정력</span><span class="sv2" id="bPwr">90%</span></div>
+          <div class="sri"><span class="sk">유의수준</span><span class="sv2">α = 0.05 (양측)</span></div>
+          <div class="sri"><span class="sk">동등성 기준</span><span class="sv2">80% – 125%</span></div>
+        </div>
+        <div class="br">
+          <button class="btn bg" onclick="exportExcel_s1()">📊 Excel 저장</button>
+          <button class="btn bg" onclick="alert('Ctrl+P → PDF 저장')">📄 PDF 저장</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- S2 -->
+  <div class="section" id="s2">
+    <div class="ph"><h1>PK 데이터 입력</h1><p>Subject, Period, Sequence, Time, Conc 컬럼이 필요합니다.</p></div>
+    <div class="it">
+      <div class="itb active" onclick="dtab('upload',this)">파일 업로드</div>
+      <div class="itb" onclick="dtab('manual',this)">수동 입력</div>
+      <div class="itb" onclick="dtab('sample',this)">샘플 데이터</div>
+      <div class="itb" onclick="dtab('paste',this)">붙여넣기</div>
+    </div>
+
+    <div id="tab-upload">
+      <div class="card" style="padding:16px;">
+        <div class="uz" id="dropzone" onclick="document.getElementById('fi').click()"
+             ondragover="event.preventDefault();this.classList.add('drag')"
+             ondragleave="this.classList.remove('drag')"
+             ondrop="handleDrop(event)">
+          <div class="uzi">📂</div>
+          <p><span>클릭하거나 파일을 드래그</span>하여 업로드</p>
+          <p class="uzh">.xlsx · .xls · .csv 지원</p>
+        </div>
+        <input type="file" id="fi" accept=".xlsx,.xls,.csv" style="display:none" onchange="handleFile(event)">
+        <div id="us" style="display:none;margin-top:12px;" class="nt" style="background:var(--gr-bg);border-color:var(--gr-bd);color:#166534;">
+          ✅ <span id="um"></span>
+        </div>
+      </div>
+    </div>
+
+    <div id="tab-manual" style="display:none">
+      <div class="card">
+        <div class="ct">설정</div>
+        <div class="fgrid mb14">
+          <div class="fg" style="margin-bottom:0"><label>대상자 수</label><input type="number" id="manN" value="8" min="2" max="50"></div>
+          <div class="fg" style="margin-bottom:0"><label>채혈 시점 (hr, 쉼표 구분)</label><input type="text" id="manT" value="0,0.5,1,1.5,2,3,4,6,8,12,24"></div>
+        </div>
+        <button class="btn bg bs" onclick="buildManual()">테이블 생성</button>
+      </div>
+      <div class="card" id="mtc" style="overflow-x:auto;padding:12px;">
+        <div class="es" style="padding:20px;"><p>위에서 [테이블 생성] 클릭 후 값을 입력하세요.</p></div>
+      </div>
+      <button class="btn ba mt16" onclick="loadManual()">✅ 데이터 적용</button>
+    </div>
+
+    <div id="tab-sample" style="display:none">
+      <div class="card">
+        <div class="ct">내장 샘플 데이터</div>
+        <div class="sog">
+          <div class="so" onclick="loadSample('standard')"><div class="soi">💊</div><div class="sot">표준 BE 시험 (n=8)</div><div class="sod">Cmax ≈ 650 ng/mL · CV ≈ 15%</div></div>
+          <div class="so" onclick="loadSample('highcv')"><div class="soi">📊</div><div class="sot">고변이 약물 (n=12)</div><div class="sod">Cmax ≈ 400 ng/mL · CV ≈ 35%</div></div>
+        </div>
+      </div>
+    </div>
+
+    <div id="tab-paste" style="display:none">
+      <div class="card">
+        <div class="ct">Excel 복사 후 붙여넣기 (탭 구분, 첫 행 = 헤더)</div>
+        <textarea id="pa" rows="10" placeholder="Subject	Period	Sequence	Time	Conc&#10;S001	1	TR	0	0&#10;S001	1	TR	0.5	152.3&#10;..."></textarea>
+        <button class="btn ba mt16" onclick="loadPaste()">적용</button>
+      </div>
+    </div>
+
+    <div id="dp" style="display:none;margin-top:18px;">
+      <div style="font-size:12px;font-weight:600;color:var(--tx3);margin-bottom:8px;text-transform:uppercase;letter-spacing:.4px;">데이터 미리보기</div>
+      <div class="card" style="overflow-x:auto;padding:12px;"><div id="pt"></div></div>
+      <button class="btn ba mt16" onclick="nav('s3',null,'동등성 판정','90% CI 기반 생물학적동등성 판정');runAnalysis()">
+        동등성 분석 실행 →
+      </button>
+    </div>
+  </div>
+
+  <!-- S3 -->
+  <div class="section" id="s3">
+    <div class="ph"><h1>동등성 판정</h1><p>TOST(Two One-Sided Test) 90% 신뢰구간 기반으로 생물학적동등성을 판정합니다.</p></div>
+    <div id="s3e" class="card"><div class="es"><div class="esi">⚖️</div><h3>데이터가 없습니다</h3><p>STEP 02에서 데이터를 입력하고 분석을 실행하세요.</p><button class="btn bg mt16" onclick="nav('s2',null,'데이터 입력','')">← 데이터 입력으로</button></div></div>
+    <div id="s3r" style="display:none">
+      <div class="sgrid">
+        <div class="sb"><div class="sl">Cmax · Test</div><div class="sv" id="rcT">–</div><div class="ss">ng/mL (geom. mean)</div></div>
+        <div class="sb"><div class="sl">Cmax · Reference</div><div class="sv" id="rcR">–</div><div class="ss">ng/mL (geom. mean)</div></div>
+        <div class="sb hi"><div class="sl">Cmax GMR · 90% CI</div><div class="sv" id="rcG">–</div><div class="ss" id="rcC">–</div></div>
+        <div class="sb"><div class="sl">AUCt · Test</div><div class="sv" id="raT">–</div><div class="ss">ng·hr/mL</div></div>
+        <div class="sb"><div class="sl">AUCt · Reference</div><div class="sv" id="raR">–</div><div class="ss">ng·hr/mL</div></div>
+        <div class="sb hi"><div class="sl">AUCt GMR · 90% CI</div><div class="sv" id="raG">–</div><div class="ss" id="raC">–</div></div>
+      </div>
+      <div class="rb">
+        <div class="rh">생물학적동등성 판정 결과</div>
+        <table class="rt">
+          <thead><tr><th>파라미터</th><th>GMR (%)</th><th>90% 신뢰구간</th><th style="text-align:center">판정</th></tr></thead>
+          <tbody id="brb"></tbody>
+        </table>
+      </div>
+      <div id="pb"></div>
+      <div class="br">
+        <button class="btn bp" onclick="exportRpt()">📄 결과 리포트</button>
+        <button class="btn bg" onclick="exportXL()">📊 Excel 내보내기</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- S4 -->
+  <div class="section" id="s4">
+    <div class="ph"><h1>시각화</h1><p>평균 및 개별 대상자 농도-시간 프로파일을 확인합니다.</p></div>
+    <div id="s4e" class="card"><div class="es"><div class="esi">📈</div><h3>데이터가 없습니다</h3><p>STEP 02에서 데이터를 입력하면 차트가 표시됩니다.</p></div></div>
+    <div id="s4r" style="display:none">
+      <div class="card mb14"><div class="ct">평균 농도-시간 곡선</div><canvas id="mc" height="250"></canvas></div>
+      <div style="font-size:12px;font-weight:600;color:var(--tx3);margin-bottom:10px;text-transform:uppercase;letter-spacing:.4px;">개별 대상자 프로파일</div>
+      <div class="sg" id="sg"></div>
+    </div>
+  </div>
+
+  <!-- S5 -->
+  <div class="section" id="s5">
+    <div class="ph"><h1>IVIVC 분석</h1><p>Wagner-Nelson Deconvolution으로 in vivo 흡수율을 산출하고 in vitro 용출과 상관시킵니다.</p></div>
+    <div class="it">
+      <div class="itb active" onclick="ivtab('method',this)">⚙ Deconvolution 설정</div>
+      <div class="itb" onclick="ivtab('vitro',this)">🧫 In Vitro 용출 데이터</div>
+      <div class="itb" onclick="ivtab('result',this)">📊 IVIVC 상관 결과</div>
+    </div>
+
+    <div id="iv-method">
+      <div class="tc3">
+        <div>
+          <div class="card">
+            <div class="ct">Wagner-Nelson 설정</div>
+            <div class="fg"><label>소실속도상수 Kel (hr⁻¹)</label><input type="number" id="kel" value="0.08" step="0.01"></div>
+            <div class="fg mb14"><label>분석 대상 데이터</label>
+              <select id="ivd"><option>Test (시험약)</option><option>Reference (대조약)</option><option>평균 (Test + Reference)</option></select>
+            </div>
+            <button class="btn ba" onclick="runDeconv()">▶ Deconvolution 실행</button>
+          </div>
+        </div>
+        <div>
+          <div class="card">
+            <div class="ct">계산식</div>
+            <div class="fm">%Fa(t) =<br>[C(t) + Kel × AUC(0→t)]<br>─────────────────────<br>[C(∞) + Kel × AUC(0→∞)] × 100</div>
+            <div class="nt ni2">1-compartment 모델 가정. Kel은 말단 log-linear 구간 회귀 또는 문헌값을 사용하세요.</div>
+          </div>
+        </div>
+      </div>
+      <div id="dr" style="display:none;margin-top:4px;">
+        <div style="font-size:12px;font-weight:600;color:var(--tx3);margin-bottom:10px;text-transform:uppercase;letter-spacing:.4px;">Deconvolution 결과 — In Vivo 흡수율 (%Fa)</div>
+        <div class="card"><canvas id="fc" height="230"></canvas></div>
+        <div class="card" style="overflow-x:auto;padding:12px;margin-top:12px;"><div id="ft"></div></div>
+      </div>
+    </div>
+
+    <div id="iv-vitro" style="display:none">
+      <div class="card">
+        <div class="ct">In Vitro 용출 데이터</div>
+        <div class="it" style="margin-bottom:16px;">
+          <div class="itb active" onclick="vtab('manual',this)">수동 입력</div>
+          <div class="itb" onclick="vtab('sample',this)">샘플 데이터</div>
+          <div class="itb" onclick="vtab('paste',this)">붙여넣기</div>
+        </div>
+        <div id="vt-manual">
+          <div style="display:grid;grid-template-columns:28px 1fr 1fr 28px;gap:8px;margin-bottom:6px;font-size:11px;font-weight:600;color:var(--tx3);text-transform:uppercase;letter-spacing:.4px;">
+            <div></div><div>시간 (hr)</div><div>용출률 (%)</div><div></div>
+          </div>
+          <div id="vi"></div>
+          <button class="btn bg bs mt8" onclick="addVR()">+ 행 추가</button>
+        </div>
+        <div id="vt-sample" style="display:none;"><button class="btn ba" onclick="loadSV()">샘플 용출 데이터 불러오기</button></div>
+        <div id="vt-paste" style="display:none;">
+          <textarea id="vpa" rows="8" placeholder="Time	Dissolution%&#10;0	0&#10;0.5	25&#10;..."></textarea>
+          <button class="btn ba mt16" onclick="loadVP()">적용</button>
+        </div>
+      </div>
+    </div>
+
+    <div id="iv-result" style="display:none">
+      <div id="iem" class="card"><div class="es"><div class="esi">🔬</div><h3>데이터가 부족합니다</h3><p>Deconvolution을 먼저 실행하고, In Vitro 데이터(최소 3개 시점)를 입력하세요.</p></div></div>
+      <div id="ipw" style="display:none;">
+        <div class="tc">
+          <div class="card"><div class="ct">IVIVC Correlation Plot</div><canvas id="icc" height="270"></canvas></div>
+          <div class="card"><div class="ct">상관 통계</div><div id="is"></div><div class="fm" id="ieq" style="margin-top:12px;font-size:11.5px;"></div></div>
+        </div>
+        <div class="card" style="margin-top:12px;"><div class="ct">In Vitro vs In Vivo 비교 곡선</div><canvas id="cpc" height="210"></canvas></div>
+      </div>
+    </div>
+
+  </div>
+
+  </div><!-- /pg -->
+</div><!-- /ca -->
+</div><!-- /app -->
+
+<script>
+let rawData=[],pkResults=null,faData=null,vitroData=[],charts={};
+
+// NAV
+function nav(id,el,title,desc){
+  document.querySelectorAll('.section').forEach(s=>s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  document.querySelectorAll('.ni').forEach(n=>n.classList.remove('active'));
+  if(el)el.classList.add('active');
+  if(title)document.getElementById('ttl').textContent=title;
+  if(desc!==undefined)document.getElementById('tdesc').textContent=desc;
+}
+function dtab(n,el){
+  ['upload','manual','sample','paste'].forEach(t=>document.getElementById('tab-'+t).style.display=t===n?'block':'none');
+  document.querySelectorAll('#s2 .it .itb').forEach(t=>t.classList.remove('active'));
+  if(el)el.classList.add('active');
+}
+function ivtab(n,el){
+  ['method','vitro','result'].forEach(t=>document.getElementById('iv-'+t).style.display=t===n?'block':'none');
+  document.querySelectorAll('#s5>.it .itb').forEach(t=>t.classList.remove('active'));
+  if(el)el.classList.add('active');
+  if(n==='result')tryIVIVC();
+}
+function vtab(n,el){
+  ['manual','sample','paste'].forEach(t=>document.getElementById('vt-'+t).style.display=t===n?'block':'none');
+  el.parentElement.querySelectorAll('.itb').forEach(t=>t.classList.remove('active'));
+  el.classList.add('active');
+}
+
+// S1 SAMPLE SIZE
+function calcSS(){
+  const gmr=parseFloat(document.getElementById('gmr').value)||0.95;
+  const cv=parseFloat(document.getElementById('cv').value)||28.5;
+  const pwr=parseFloat(document.getElementById('power').value)/100||0.90;
+  const s2=2*Math.pow(Math.log(1+cv/100),2);
+  const zA=zp(0.95),zB=zp(pwr);
+  const d=Math.min(Math.abs(Math.log(gmr)),Math.abs(Math.log(0.8/gmr)));
+  let n=Math.ceil(Math.pow(zA+zB,2)*s2/Math.pow(d,2));
+  if(n%2)n++;
+  document.getElementById('nResult').textContent=n;
+  document.getElementById('bGmr').textContent=gmr.toFixed(2);
+  document.getElementById('bCv').textContent=cv.toFixed(1)+'%';
+  document.getElementById('bPwr').textContent=(pwr*100).toFixed(0)+'%';
+}
+function zp(p){
+  if(p<=0)return-Infinity;if(p>=1)return Infinity;
+  const a1=-39.69683,a2=220.946098,a3=-275.92851,a4=138.35775,a5=-30.66479,a6=2.50663;
+  const b1=-54.47610,b2=161.58584,b3=-155.69898,b4=66.80131,b5=-13.28068;
+  const c1=-0.00778,c2=-0.32240,c3=-2.40076,c4=-2.54973,c5=4.37466,c6=2.93816;
+  const d1=0.00778,d2=0.32247,d3=2.44513,d4=3.75441;
+  const pL=0.02425,pH=1-pL;let q,r;
+  if(p<pL){q=Math.sqrt(-2*Math.log(p));return(((((c1*q+c2)*q+c3)*q+c4)*q+c5)*q+c6)/((((d1*q+d2)*q+d3)*q+d4)*q+1);}
+  else if(p<=pH){q=p-.5;r=q*q;return(((((a1*r+a2)*r+a3)*r+a4)*r+a5)*r+a6)*q/(((((b1*r+b2)*r+b3)*r+b4)*r+b5)*r+1);}
+  else{q=Math.sqrt(-2*Math.log(1-p));return-(((((c1*q+c2)*q+c3)*q+c4)*q+c5)*q+c6)/((((d1*q+d2)*q+d3)*q+d4)*q+1);}
+}
+
+// S2 DATA
+function handleFile(e){pf(e.target.files[0]);}
+function handleDrop(e){e.preventDefault();document.getElementById('dropzone').classList.remove('drag');pf(e.dataTransfer.files[0]);}
+function pf(file){
+  if(!file)return;
+  const ext=file.name.split('.').pop().toLowerCase();
+  if(ext==='csv')Papa.parse(file,{header:true,dynamicTyping:true,complete:r=>applyData(r.data,file.name)});
+  else{const rd=new FileReader();rd.onload=e=>{const wb=XLSX.read(e.target.result,{type:'binary'});applyData(XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]],{defval:''}),file.name);};rd.readAsBinaryString(file);}
+}
+function applyData(rows,fn=''){
+  rawData=rows.map(r=>{
+    const k=Object.keys(r);
+    const g=ns=>{for(const n of ns)for(const key of k)if(key.toLowerCase()===n.toLowerCase())return r[key];return '';};
+    return{Subject:String(g(['Subject','subject','ID','id'])).trim(),Period:Number(g(['Period','period'])),Sequence:String(g(['Sequence','sequence','Seq','seq','Group'])).trim().toUpperCase(),Time:Number(g(['Time','time','T','hr'])),Conc:Number(g(['Conc','conc','Concentration','concentration','C','DV']))};
+  }).filter(r=>r.Subject&&!isNaN(r.Time)&&!isNaN(r.Conc));
+  const n=[...new Set(rawData.map(r=>r.Subject))].length;
+  const el=document.getElementById('us');el.style.display='block';
+  el.style.background='var(--gr-bg)';el.style.borderColor='var(--gr-bd)';el.style.color='#166534';
+  document.getElementById('um').textContent=`${fn?fn+' — ':''}${rawData.length}행 로드 완료 (${n}명)`;
+  renderPreview();
+}
+function renderPreview(){
+  const cols=['Subject','Period','Sequence','Time','Conc'];
+  let h=`<table class="dt"><thead><tr>${cols.map(c=>`<th>${c}</th>`).join('')}</tr></thead><tbody>`;
+  rawData.slice(0,30).forEach(r=>{h+=`<tr>${cols.map(c=>`<td>${r[c]}</td>`).join('')}</tr>`;});
+  if(rawData.length>30)h+=`<tr><td colspan="5" style="color:var(--tx3);text-align:center;padding:8px">… 외 ${rawData.length-30}행</td></tr>`;
+  document.getElementById('pt').innerHTML=h+'</tbody></table>';
+  document.getElementById('dp').style.display='block';
+}
+function buildManual(){
+  const n=parseInt(document.getElementById('manN').value)||8;
+  const ts=document.getElementById('manT').value.split(',').map(v=>parseFloat(v.trim())).filter(v=>!isNaN(v));
+  const seqs=Array.from({length:n},(_,i)=>i%2===0?'TR':'RT');
+  let h=`<table class="dt" style="min-width:540px"><thead><tr><th>Subject</th><th>Seq</th><th>Period</th>${ts.map(t=>`<th>${t}hr</th>`).join('')}</tr></thead><tbody>`;
+  for(let s=1;s<=n;s++)for(let p=1;p<=2;p++){
+    const id='S'+String(s).padStart(3,'0');
+    h+=`<tr><td>${id}</td><td>${seqs[s-1]}</td><td>${p}</td>${ts.map((_,i)=>`<td><input type="number" step="any" id="m_${s}_${p}_${i}" placeholder="0"></td>`).join('')}</tr>`;
+  }
+  const card=document.getElementById('mtc');card.innerHTML=h+'</tbody></table>';
+  card._d={n,ts,seqs};
+}
+function loadManual(){
+  const d=document.getElementById('mtc')._d;if(!d)return alert('테이블을 먼저 생성하세요.');
+  rawData=[];
+  for(let s=1;s<=d.n;s++)for(let p=1;p<=2;p++){
+    const id='S'+String(s).padStart(3,'0');
+    d.ts.forEach((t,i)=>{const v=parseFloat(document.getElementById(`m_${s}_${p}_${i}`)?.value);if(!isNaN(v))rawData.push({Subject:id,Period:p,Sequence:d.seqs[s-1],Time:t,Conc:v});});
+  }
+  renderPreview();
+}
+function loadPaste(){applyData(Papa.parse(document.getElementById('pa').value.trim(),{header:true,delimiter:'\t',dynamicTyping:true}).data,'붙여넣기');}
+function loadSample(type){
+  const ts=[0,.5,1,1.5,2,3,4,6,8,12,24],n=type==='highcv'?12:8,base=type==='highcv'?400:650,cv=type==='highcv'?.35:.15;
+  rawData=[];
+  for(let s=1;s<=n;s++){
+    const seq=s%2?'TR':'RT',rT=.97+(Math.random()-.5)*cv,rR=1+(Math.random()-.5)*cv;
+    for(let p=1;p<=2;p++){
+      const isT=(seq==='TR'&&p===1)||(seq==='RT'&&p===2),cm=base*(isT?rT:rR);
+      ts.forEach(t=>{let c=t===0?0:t<=1.5?cm*(t/1.5):cm*Math.exp(-.08*(t-1.5));rawData.push({Subject:'S'+String(s).padStart(3,'0'),Period:p,Sequence:seq,Time:t,Conc:Math.max(0,c+c*(Math.random()-.5)*.05)});});
+    }
+  }
+  document.getElementById('us').style.display='block';
+  document.getElementById('us').style.background='var(--gr-bg)';document.getElementById('us').style.color='#166534';
+  document.getElementById('um').textContent=`샘플 데이터 (${n}명) 로드 완료`;
+  renderPreview();dtab('upload',null);
+  document.querySelectorAll('#s2 .it .itb')[0].classList.add('active');
+}
+
+// PK MATH
+function runAnalysis(){
+  if(!rawData.length)return;
+  const subs=[...new Set(rawData.map(r=>r.Subject))],pks={};
+  subs.forEach(sub=>{
+    const rows=rawData.filter(r=>r.Subject===sub);pks[sub]={seq:rows[0]?.Sequence||'TR'};
+    [...new Set(rows.map(r=>r.Period))].forEach(per=>{
+      const pr=rows.filter(r=>r.Period===per).sort((a,b)=>a.Time-b.Time);
+      const seq=pr[0]?.Sequence||'TR',isT=(seq==='TR'&&per===1)||(seq==='RT'&&per===2);
+      pks[sub][isT?'T':'R']=calcPK(pr);
+    });
+  });
+  const cmT=[],cmR=[],atT=[],atR=[],aiT=[],aiR=[];
+  subs.forEach(s=>{const pk=pks[s];if(pk.T&&pk.R){cmT.push(pk.T.cmax);cmR.push(pk.R.cmax);atT.push(pk.T.auct);atR.push(pk.R.auct);aiT.push(pk.T.aucinf);aiR.push(pk.R.aucinf);}});
+  pkResults={subs,pks,cmT,cmR,atT,atR,aiT,aiR,cr:beT(cmT,cmR),ar:beT(atT,atR),ir:beT(aiT,aiR)};
+  renderS3();renderS4();
+}
+function calcPK(rows){
+  const ts=rows.map(r=>r.Time),cs=rows.map(r=>r.Conc);
+  const cmax=Math.max(...cs),tmax=ts[cs.indexOf(cmax)];
+  let auct=0;for(let i=1;i<ts.length;i++)auct+=(ts[i]-ts[i-1])*(cs[i]+cs[i-1])/2;
+  const ti=[];for(let i=cs.length-1;i>=0&&ti.length<5;i--)if(cs[i]>0)ti.unshift(i);
+  let kel=.08;
+  if(ti.length>=2){const xs=ti.map(i=>ts[i]),ys=ti.map(i=>Math.log(cs[i]));const{slope}=linReg(xs,ys);if(slope<0)kel=-slope;}
+  return{cmax,tmax,auct,aucinf:auct+cs[cs.length-1]/kel,kel,times:ts,concs:cs};
+}
+function linReg(xs,ys){
+  const n=xs.length,xm=xs.reduce((a,b)=>a+b)/n,ym=ys.reduce((a,b)=>a+b)/n;
+  let num=0,den=0;for(let i=0;i<n;i++){num+=(xs[i]-xm)*(ys[i]-ym);den+=(xs[i]-xm)**2;}
+  const slope=den?num/den:0,ic=ym-slope*xm;
+  let sr=0,st=0;for(let i=0;i<n;i++){sr+=(ys[i]-(slope*xs[i]+ic))**2;st+=(ys[i]-ym)**2;}
+  return{slope,intercept:ic,r2:st?1-sr/st:0};
+}
+function beT(aT,aR){
+  const n=Math.min(aT.length,aR.length);
+  const diff=aT.map((v,i)=>Math.log(v)-Math.log(aR[i]));
+  const md=diff.reduce((a,b)=>a+b)/n,vd=diff.reduce((a,v)=>a+(v-md)**2,0)/(n-1);
+  const se=Math.sqrt(vd/n),t=tCr(n-1);
+  const lo=Math.exp(md-t*se)*100,hi=Math.exp(md+t*se)*100,gmr=Math.exp(md)*100;
+  const lnT=aT.map(Math.log),lnR=aR.map(Math.log);
+  return{gmr,lo,hi,pass:lo>=80&&hi<=125,mT:Math.exp(lnT.reduce((a,b)=>a+b)/n),mR:Math.exp(lnR.reduce((a,b)=>a+b)/n)};
+}
+function tCr(df){
+  const tb={1:6.314,2:2.920,3:2.353,4:2.132,5:2.015,6:1.943,7:1.895,8:1.860,9:1.833,10:1.812,11:1.796,12:1.782,13:1.771,14:1.761,15:1.753,16:1.746,17:1.740,18:1.734,19:1.729,20:1.725,21:1.721,22:1.717,23:1.714,24:1.711,25:1.708,26:1.706,27:1.703,28:1.701,29:1.699};
+  return tb[df]||zp(.95);
+}
+
+function renderS3(){
+  if(!pkResults)return;
+  const{cr,ar,ir}=pkResults;
+  document.getElementById('s3e').style.display='none';
+  document.getElementById('s3r').style.display='block';
+  const set=(id,v)=>{const e=document.getElementById(id);if(e)e.textContent=v;};
+  set('rcT',cr.mT.toFixed(1));set('rcR',cr.mR.toFixed(1));set('rcG',cr.gmr.toFixed(1)+'%');set('rcC',`${cr.lo.toFixed(1)} – ${cr.hi.toFixed(1)}`);
+  set('raT',(pkResults.atT.reduce((a,b)=>a+b)/pkResults.atT.length).toFixed(0));
+  set('raR',(pkResults.atR.reduce((a,b)=>a+b)/pkResults.atR.length).toFixed(0));
+  set('raG',ar.gmr.toFixed(1)+'%');set('raC',`${ar.lo.toFixed(1)} – ${ar.hi.toFixed(1)}`);
+  const tbody=document.getElementById('brb');tbody.innerHTML='';
+  [cr,ar,ir].forEach((res,i)=>{
+    const lbl=['Cmax','AUCt','AUCinf'][i];
+    const lf=Math.max(0,Math.min(1,(res.lo-80)/45)),hf=Math.max(0,Math.min(1,(res.hi-80)/45));
+    tbody.innerHTML+=`<tr><td>${lbl}</td><td class="mono">${res.gmr.toFixed(2)}%</td>
+    <td><div class="ciw"><div class="cit"><div class="cif" style="left:${lf*100}%;width:${(hf-lf)*100}%"></div></div><span class="cil">${res.lo.toFixed(1)}–${res.hi.toFixed(1)}</span></div></td>
+    <td style="text-align:center"><span class="badge ${res.pass?'bp2':'bf'}">${res.pass?'✓ PASS':'✗ FAIL'}</span></td></tr>`;
+  });
+  const ap=cr.pass&&ar.pass&&ir.pass;
+  document.getElementById('pb').innerHTML=ap
+    ?`<div class="oc pass"><div class="oi">🎉</div><div><div class="ot">생물학적동등성 입증</div><div class="od">Cmax, AUCt, AUCinf 모두 80–125% 기준을 충족합니다.</div></div></div>`
+    :`<div class="oc fail"><div class="oi">❌</div><div><div class="ot">생물학적동등성 미입증</div><div class="od">일부 파라미터가 80–125% 허용 범위를 벗어났습니다.</div></div></div>`;
+}
+
+function renderS4(){
+  if(!pkResults)return;
+  document.getElementById('s4e').style.display='none';
+  document.getElementById('s4r').style.display='block';
+  const{subs,pks}=pkResults;
+  const ts=[...new Set(rawData.map(r=>r.Time))].sort((a,b)=>a-b);
+  const mT={},mR={};ts.forEach(t=>{mT[t]=[];mR[t]=[];});
+  subs.forEach(s=>{
+    const pk=pks[s];
+    if(pk.T)pk.T.times.forEach((t,i)=>{if(mT[t]!==undefined)mT[t].push(pk.T.concs[i]);});
+    if(pk.R)pk.R.times.forEach((t,i)=>{if(mR[t]!==undefined)mR[t].push(pk.R.concs[i]);});
+  });
+  const aT=ts.map(t=>mT[t].length?mT[t].reduce((a,b)=>a+b)/mT[t].length:null);
+  const aR=ts.map(t=>mR[t].length?mR[t].reduce((a,b)=>a+b)/mR[t].length:null);
+  if(charts.mean)charts.mean.destroy();
+  charts.mean=new Chart(document.getElementById('mc').getContext('2d'),{
+    type:'line',
+    data:{labels:ts,datasets:[
+      {label:'Test',data:aT,borderColor:'#2563eb',backgroundColor:'rgba(37,99,235,.06)',fill:true,tension:.3,pointRadius:4,borderWidth:2},
+      {label:'Reference',data:aR,borderColor:'#dc2626',backgroundColor:'rgba(220,38,38,.04)',fill:true,tension:.3,pointRadius:4,borderWidth:2}
+    ]},
+    options:{responsive:true,plugins:{legend:{position:'bottom',labels:{font:{family:'Geist,sans-serif',size:12}}}},scales:{x:{title:{display:true,text:'Time (hr)'}},y:{title:{display:true,text:'Conc (ng/mL)'},beginAtZero:true}}}
+  });
+  const grid=document.getElementById('sg');grid.innerHTML='';
+  Object.keys(charts).forEach(k=>{if(k.startsWith('sc_')){charts[k].destroy();delete charts[k];}});
+  subs.forEach(sub=>{
+    const pk=pks[sub],seq=pk.seq||'TR';
+    const div=document.createElement('div');div.className='sc';
+    div.innerHTML=`<div class="sn"><span>${sub}</span><span class="sp ${seq==='TR'?'str':'srt'}">${seq.split('').join('–')}</span></div><canvas id="c_${sub}" height="80"></canvas><div class="ss2"><span>T: <strong>${pk.T?.cmax?.toFixed(0)||'–'}</strong></span><span>R: <strong>${pk.R?.cmax?.toFixed(0)||'–'}</strong></span><span>${pk.T&&pk.R?(pk.T.cmax/pk.R.cmax*100).toFixed(1)+'%':'–'}</span></div>`;
+    grid.appendChild(div);
+    requestAnimationFrame(()=>{
+      const ds=[];
+      if(pk.T)ds.push({label:'T',data:pk.T.concs,borderColor:'#2563eb',borderWidth:1.5,pointRadius:1.5,tension:.3,fill:false});
+      if(pk.R)ds.push({label:'R',data:pk.R.concs,borderColor:'#dc2626',borderWidth:1.5,pointRadius:1.5,tension:.3,fill:false});
+      charts[`sc_${sub}`]=new Chart(document.getElementById(`c_${sub}`).getContext('2d'),{
+        type:'line',data:{labels:pk.T?.times||pk.R?.times||[],datasets:ds},
+        options:{responsive:true,plugins:{legend:{display:false}},scales:{x:{display:false},y:{display:false}},animation:false}
+      });
+    });
+  });
+}
+
+// S5 IVIVC
+function runDeconv(){
+  if(!pkResults)return alert('STEP 02에서 PK 데이터를 먼저 입력하세요.');
+  const kel=parseFloat(document.getElementById('kel').value)||.08;
+  const sel=document.getElementById('ivd').value;
+  const{subs,pks}=pkResults;
+  let pa=[];
+  if(sel.includes('Test'))pa=subs.map(s=>pks[s].T).filter(Boolean);
+  else if(sel.includes('Reference'))pa=subs.map(s=>pks[s].R).filter(Boolean);
+  else pa=[...subs.map(s=>pks[s].T),...subs.map(s=>pks[s].R)].filter(Boolean);
+  const ats=[...new Set(pa.flatMap(p=>p.times))].sort((a,b)=>a-b);
+  const ac=ats.map(t=>{const vs=pa.map(p=>{const i=p.times.indexOf(t);return i>=0?p.concs[i]:null;}).filter(v=>v!==null);return vs.length?vs.reduce((a,b)=>a+b)/vs.length:0;});
+  let cum=0;const aucA=[0];
+  for(let i=1;i<ats.length;i++){cum+=(ats[i]-ats[i-1])*(ac[i]+ac[i-1])/2;aucA.push(cum);}
+  const cl=ac[ac.length-1],ainf=cum+cl/kel,den=cl+kel*ainf;
+  const fa=ats.map((t,i)=>Math.min(100,Math.max(0,(ac[i]+kel*aucA[i])/den*100)));
+  faData={times:ats,fa,concs:ac};
+  document.getElementById('dr').style.display='block';
+  if(charts.fa)charts.fa.destroy();
+  charts.fa=new Chart(document.getElementById('fc').getContext('2d'),{
+    type:'line',
+    data:{labels:ats,datasets:[
+      {label:'%Fa (In Vivo 흡수율)',data:fa,borderColor:'#2563eb',backgroundColor:'rgba(37,99,235,.07)',fill:true,tension:.3,pointRadius:4,borderWidth:2},
+      {label:'평균 농도',data:ac,borderColor:'#9ca3af',borderDash:[4,4],fill:false,tension:.3,pointRadius:3,yAxisID:'y2'}
+    ]},
+    options:{responsive:true,plugins:{legend:{position:'bottom'}},scales:{x:{title:{display:true,text:'Time (hr)'}},y:{title:{display:true,text:'%Fa'},min:0,max:105},y2:{position:'right',title:{display:true,text:'Conc (ng/mL)'},grid:{drawOnChartArea:false}}}}
+  });
+  let tbl=`<table class="dt"><thead><tr><th>Time (hr)</th><th>Avg Conc</th><th>Cum AUC</th><th>%Fa</th></tr></thead><tbody>`;
+  ats.forEach((t,i)=>{tbl+=`<tr><td>${t}</td><td>${ac[i].toFixed(2)}</td><td>${aucA[i].toFixed(1)}</td><td><strong>${fa[i].toFixed(1)}%</strong></td></tr>`;});
+  document.getElementById('ft').innerHTML=tbl+'</tbody></table>';
+}
+
+function addVR(t='',d=''){
+  const c=document.getElementById('vi'),idx=c.children.length+1;
+  const div=document.createElement('div');
+  div.style.cssText='display:grid;grid-template-columns:28px 1fr 1fr 28px;gap:8px;align-items:center;margin-bottom:6px;';
+  div.innerHTML=`<span style="font-size:11px;color:var(--tx3);text-align:right">${idx}</span><input type="number" step="any" class="vt" value="${t}" placeholder="0"><input type="number" step="any" class="vd" value="${d}" placeholder="0"><button onclick="this.parentElement.remove()" style="background:none;border:none;cursor:pointer;color:var(--tx3);font-size:16px;line-height:1">×</button>`;
+  c.appendChild(div);
+}
+function loadSV(){document.getElementById('vi').innerHTML='';[[0,0],[.5,18],[1,35],[1.5,50],[2,62],[3,75],[4,83],[6,90],[8,95],[12,98],[24,100]].forEach(([t,d])=>addVR(t,d));}
+function loadVP(){
+  const rows=Papa.parse(document.getElementById('vpa').value.trim(),{header:true,delimiter:'\t',dynamicTyping:true}).data;
+  document.getElementById('vi').innerHTML='';
+  rows.forEach(r=>addVR(r.Time??r.time??'',r['Dissolution%']??r.Dissolution??r.diss??''));
+}
+function getVD(){
+  vitroData=[];
+  document.querySelectorAll('#vi>div').forEach(row=>{
+    const t=parseFloat(row.querySelector('.vt')?.value),d=parseFloat(row.querySelector('.vd')?.value);
+    if(!isNaN(t)&&!isNaN(d))vitroData.push({time:t,diss:d});
+  });
+  vitroData.sort((a,b)=>a.time-b.time);return vitroData;
+}
+function tryIVIVC(){
+  getVD();
+  const ok=faData&&vitroData.length>=3;
+  document.getElementById('iem').style.display=ok?'none':'block';
+  document.getElementById('ipw').style.display=ok?'block':'none';
+  if(ok)renderIVIVC();
+}
+function renderIVIVC(){
+  const vT=vitroData.map(v=>v.time),vD=vitroData.map(v=>v.diss);
+  const faV=vT.map(t=>{
+    if(t<=faData.times[0])return 0;
+    if(t>=faData.times[faData.times.length-1])return faData.fa[faData.fa.length-1];
+    for(let i=1;i<faData.times.length;i++)if(faData.times[i]>=t){const f=(t-faData.times[i-1])/(faData.times[i]-faData.times[i-1]);return faData.fa[i-1]+f*(faData.fa[i]-faData.fa[i-1]);}
+    return faData.fa[faData.fa.length-1];
+  });
+  const{slope,intercept,r2}=linReg(vD,faV);
+  const r=Math.sqrt(r2)*(slope>=0?1:-1);
+  if(charts.iv)charts.iv.destroy();
+  charts.iv=new Chart(document.getElementById('icc').getContext('2d'),{
+    type:'scatter',
+    data:{datasets:[
+      {label:'Data points',data:vD.map((d,i)=>({x:d,y:faV[i]})),backgroundColor:'#2563eb',pointRadius:6},
+      {label:'Regression',data:[0,100].map(x=>({x,y:slope*x+intercept})),type:'line',borderColor:'#dc2626',borderWidth:2,pointRadius:0,fill:false}
+    ]},
+    options:{responsive:true,plugins:{legend:{position:'bottom'}},scales:{x:{title:{display:true,text:'In Vitro 용출률 (%)'},min:0,max:105},y:{title:{display:true,text:'In Vivo %Fa'},min:0,max:105}}}
+  });
+  const lvl=Math.abs(r)>=.9?`<span style="color:var(--gr);font-weight:700">✓ Level A 적합</span>`:`<span style="color:var(--am);font-weight:700">△ 검토 필요 (r < 0.9)</span>`;
+  document.getElementById('is').innerHTML=`
+    <div class="sri"><span class="sk">r (Pearson)</span><span class="sv2">${r.toFixed(4)}</span></div>
+    <div class="sri"><span class="sk">R²</span><span class="sv2">${r2.toFixed(4)}</span></div>
+    <div class="sri"><span class="sk">기울기 (slope)</span><span class="sv2">${slope.toFixed(4)}</span></div>
+    <div class="sri"><span class="sk">절편 (intercept)</span><span class="sv2">${intercept.toFixed(4)}</span></div>
+    <div class="sri"><span class="sk">데이터 수</span><span class="sv2">${vT.length}개</span></div>
+    <div class="sri"><span class="sk">Level A 판정</span><span>${lvl}</span></div>`;
+  document.getElementById('ieq').textContent=`%Fa = ${slope.toFixed(3)} × Diss% + ${intercept.toFixed(3)}`;
+  if(charts.cp)charts.cp.destroy();
+  charts.cp=new Chart(document.getElementById('cpc').getContext('2d'),{
+    type:'line',
+    data:{labels:faData.times,datasets:[
+      {label:'In Vivo %Fa',data:faData.fa,borderColor:'#2563eb',fill:false,tension:.3,pointRadius:3,borderWidth:2},
+      {label:'In Vitro 용출률 (%)',data:faData.times.map(t=>{
+        if(t<=vitroData[0].time)return vitroData[0].diss;
+        if(t>=vitroData[vitroData.length-1].time)return vitroData[vitroData.length-1].diss;
+        for(let i=1;i<vitroData.length;i++)if(vitroData[i].time>=t){const f=(t-vitroData[i-1].time)/(vitroData[i].time-vitroData[i-1].time);return vitroData[i-1].diss+f*(vitroData[i].diss-vitroData[i-1].diss);}
+        return vitroData[vitroData.length-1].diss;
+      }),borderColor:'#d97706',borderDash:[5,4],fill:false,tension:.3,pointRadius:2}
+    ]},
+    options:{responsive:true,plugins:{legend:{position:'bottom'}},scales:{x:{title:{display:true,text:'Time (hr)'}},y:{title:{display:true,text:'%'},min:0,max:105}}}
+  });
+}
+
+// EXPORT
+function exportRpt(){
+  if(!pkResults)return alert('분석 결과가 없습니다.');
+  const{cr,ar,ir}=pkResults,ts=new Date().toISOString().slice(0,10);
+  const txt=`생물학적동등성 분석 보고서\n생성일: ${ts}\n분석 도구: PK Analyzer\n\n=== PK 파라미터 ===\nCmax  GMR=${cr.gmr.toFixed(2)}%  CI=[${cr.lo.toFixed(2)},${cr.hi.toFixed(2)}]  ${cr.pass?'PASS':'FAIL'}\nAUCt  GMR=${ar.gmr.toFixed(2)}%  CI=[${ar.lo.toFixed(2)},${ar.hi.toFixed(2)}]  ${ar.pass?'PASS':'FAIL'}\nAUCinf  GMR=${ir.gmr.toFixed(2)}%  CI=[${ir.lo.toFixed(2)},${ir.hi.toFixed(2)}]  ${ir.pass?'PASS':'FAIL'}\n\n${cr.pass&&ar.pass&&ir.pass?'✅ 생물학적동등성 입증':'❌ 생물학적동등성 미입증'}`;
+  const a=document.createElement('a');a.href=URL.createObjectURL(new Blob(['\uFEFF'+txt],{type:'text/plain;charset=utf-8'}));a.download=`BE_Report_${ts}.txt`;a.click();
+}
+function exportXL(){
+  if(!pkResults)return;
+  const{cr,ar,ir}=pkResults,wb=XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet([
+    ['Parameter','Test','Reference','GMR (%)','CI Lower','CI Upper','Result'],
+    ['Cmax',cr.mT.toFixed(2),cr.mR.toFixed(2),cr.gmr.toFixed(2),cr.lo.toFixed(2),cr.hi.toFixed(2),cr.pass?'PASS':'FAIL'],
+    ['AUCt',ar.mT.toFixed(2),ar.mR.toFixed(2),ar.gmr.toFixed(2),ar.lo.toFixed(2),ar.hi.toFixed(2),ar.pass?'PASS':'FAIL'],
+    ['AUCinf',ir.mT.toFixed(2),ir.mR.toFixed(2),ir.gmr.toFixed(2),ir.lo.toFixed(2),ir.hi.toFixed(2),ir.pass?'PASS':'FAIL'],
+  ]),'BE Results');
+  XLSX.writeFile(wb,`BE_Results_${new Date().toISOString().slice(0,10)}.xlsx`);
+}
+function exportExcel_s1(){
+  const wb=XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet([['GMR','CV%','Power','Required N'],[document.getElementById('gmr').value,document.getElementById('cv').value,'90%',document.getElementById('nResult').textContent]]),'Sample Size');
+  XLSX.writeFile(wb,'SampleSize.xlsx');
+}
+
+// INIT
+window.addEventListener('DOMContentLoaded',()=>{
+  calcSS();
+  [[0,0],[.5,''],[1,''],[2,''],[3,''],[4,''],[6,''],[8,''],[12,'']].forEach(([t,d])=>addVR(t,d));
+});
+</script>
+</body>
+</html>
