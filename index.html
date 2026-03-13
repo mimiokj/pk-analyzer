@@ -185,12 +185,22 @@ input:focus,select:focus,textarea:focus{border-color:var(--ac);box-shadow:0 0 0 
 .mt8{margin-top:8px;}.mt16{margin-top:16px;}.mb14{margin-bottom:14px;}
 .mono{font-family:var(--mono);}
 
+/* NCA chips */
+.chip{border:1px solid var(--bd);border-radius:var(--r);padding:12px 16px;text-align:center;min-width:100px;}
+.chip .cl{font-size:10.5px;font-weight:600;color:var(--tx3);text-transform:uppercase;letter-spacing:.4px;margin-bottom:4px;}
+.chip .cv{font-size:20px;font-weight:700;font-family:var(--mono);color:var(--tx);line-height:1.1;}
+.chip .cu{font-size:10px;color:var(--tx3);margin-top:2px;}
+
+/* small btn variant */
+.bsm{padding:5px 10px;font-size:12px;}
+
 @media(max-width:768px){
   .sidebar{display:none;}
   .sgrid{grid-template-columns:1fr 1fr;}
   .sg{grid-template-columns:1fr 1fr;}
   .tc,.tc3,.fgrid{grid-template-columns:1fr;}
   .pg{padding:20px 16px 48px;}
+  #s4r > div:first-child { grid-template-columns:1fr !important; }
 }
 </style>
 </head>
@@ -222,12 +232,16 @@ input:focus,select:focus,textarea:focus{border-color:var(--ac);box-shadow:0 0 0 
     </div>
     <div class="sb-div"></div>
     <div class="sb-lbl">IVIVC</div>
-    <div class="ni" onclick="nav('s5',this,'IVIVC 분석','Wagner-Nelson Deconvolution')">
+    <div class="ni" onclick="nav('s5',this,'IVIVC 분석','Wagner-Nelson · Loo-Riegelman · Numerical Deconvolution')">
       <span class="ic">🔬</span><span>IVIVC 분석</span><span class="ns">05</span>
     </div>
   </div>
   <div style="margin-top:auto;padding:16px 16px 0;">
     <div style="font-size:11px;color:var(--tx3);line-height:1.7;">모든 계산은 브라우저 내에서만 처리됩니다.<br>데이터가 서버로 전송되지 않습니다.</div>
+    <div style="margin-top:14px;padding-top:12px;border-top:1px solid var(--bd);">
+      <div style="font-size:10px;color:var(--tx3);letter-spacing:.3px;margin-bottom:2px;text-transform:uppercase;font-weight:600;">Developer</div>
+      <div style="font-size:11.5px;color:var(--tx2);font-weight:500;">Taeheon Kim, PhD</div>
+    </div>
   </div>
 </nav>
 
@@ -249,29 +263,38 @@ input:focus,select:focus,textarea:focus{border-color:var(--ac);box-shadow:0 0 0 
 
   <!-- S1 -->
   <div class="section active" id="s1">
-    <div class="ph"><h1>표본수 계산기</h1><p>2×2 crossover BE 시험 최소 대상자 수를 산출합니다.</p></div>
+    <div class="ph"><h1>표본수 계산기</h1><p>시험 디자인에 따라 최소 대상자 수를 산출합니다.</p></div>
     <div class="tc">
       <div>
         <div class="card">
-          <div class="ct">파라미터 설정</div>
+          <div class="ct">시험 디자인</div>
+          <div style="display:flex;gap:8px;margin-bottom:14px;">
+            <button id="des-cross" class="btn ba" style="flex:1;justify-content:center;font-size:12.5px;" onclick="setDesign('crossover',this)">⇄ 2×2 Crossover</button>
+            <button id="des-para"  class="btn bg" style="flex:1;justify-content:center;font-size:12.5px;" onclick="setDesign('parallel',this)">→ Parallel Group</button>
+          </div>
+          <div id="design-note" class="nt ni2" style="margin-bottom:14px;margin-top:0;">
+            <span id="design-note-txt">개체내 변이(CV_w)를 사용합니다. 동일 대상자에게 시험약·대조약 모두 투여합니다.</span>
+          </div>
+          <div class="ct" style="margin-top:4px;">파라미터 설정</div>
           <div class="fg"><label>계산 방식</label><select id="calcMethod"><option>90% 신뢰구간 기반</option><option>검정력 기반</option></select></div>
           <div class="fg"><label>GMR (Geometric Mean Ratio)</label><input type="number" id="gmr" value="0.95" step="0.01" min="0.8" max="1.25"></div>
-          <div class="fg"><label>CV% (개체내 변이 계수)</label><input type="number" id="cv" value="28.5" step="0.5"></div>
+          <div class="fg"><label id="cvLabel">CV% (개체내 변이, CV_w)</label><input type="number" id="cv" value="28.5" step="0.5"></div>
           <div class="fg mb14"><label>검정력 (Power)</label><select id="power"><option>80%</option><option selected>90%</option><option>95%</option></select></div>
           <button class="btn bp" style="width:100%" onclick="calcSS()">계산하기</button>
-          <div class="nt mt8">💡 동일 성분의 다른 BE 시험 90% CI를 참고하면 CV 추정 정확도가 높아집니다.</div>
+          <div class="nt mt8">💡 Parallel 디자인은 개체간 변이(CV_b)가 크거나 washout이 불가한 약물에 적합합니다.</div>
         </div>
       </div>
       <div>
         <div class="card" style="text-align:center;padding:32px 20px;border-color:#bfdbfe;background:var(--ac-bg);">
           <div style="font-size:11px;font-weight:600;color:var(--ac);text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px;">필요 대상자 수</div>
           <div id="nResult" style="font-size:76px;font-weight:800;color:var(--ac);font-family:var(--mono);line-height:1;">24</div>
-          <div style="font-size:12px;color:var(--tx3);margin-top:8px;">2×2 crossover design 기준</div>
+          <div id="nResultSub" style="font-size:12px;color:var(--tx3);margin-top:8px;">2×2 crossover design 기준</div>
         </div>
         <div class="card">
           <div class="ct">계산 근거</div>
+          <div class="sri"><span class="sk">시험 디자인</span><span class="sv2" id="bDesign">2×2 Crossover</span></div>
           <div class="sri"><span class="sk">GMR</span><span class="sv2" id="bGmr">0.95</span></div>
-          <div class="sri"><span class="sk">CV%</span><span class="sv2" id="bCv">28.5%</span></div>
+          <div class="sri"><span class="sk" id="bCvLabel">CV% (개체내)</span><span class="sv2" id="bCv">28.5%</span></div>
           <div class="sri"><span class="sk">검정력</span><span class="sv2" id="bPwr">90%</span></div>
           <div class="sri"><span class="sk">유의수준</span><span class="sv2">α = 0.05 (양측)</span></div>
           <div class="sri"><span class="sk">동등성 기준</span><span class="sv2">80% – 125%</span></div>
@@ -330,8 +353,8 @@ input:focus,select:focus,textarea:focus{border-color:var(--ac);box-shadow:0 0 0 
       <div class="card">
         <div class="ct">내장 샘플 데이터</div>
         <div class="sog">
-          <div class="so" onclick="loadSample('standard')"><div class="soi">💊</div><div class="sot">표준 BE 시험 (n=8)</div><div class="sod">Cmax ≈ 650 ng/mL · CV ≈ 15%</div></div>
-          <div class="so" onclick="loadSample('highcv')"><div class="soi">📊</div><div class="sot">고변이 약물 (n=12)</div><div class="sod">Cmax ≈ 400 ng/mL · CV ≈ 35%</div></div>
+          <div class="so" onclick="loadSample('standard')"><div class="soi">💊</div><div class="sot">표준 BE 시험 (n=8)</div><div class="sod">Ka=3.0/hr · T½=4hr · Tmax≈1hr · CV≈20%</div></div>
+          <div class="so" onclick="loadSample('highcv')"><div class="soi">📊</div><div class="sot">고변이 약물 (n=12)</div><div class="sod">Ka=3.0/hr · T½=4hr · Tmax≈1hr · CV≈35%</div></div>
         </div>
       </div>
     </div>
@@ -386,7 +409,22 @@ input:focus,select:focus,textarea:focus{border-color:var(--ac);box-shadow:0 0 0 
     <div class="ph"><h1>시각화</h1><p>평균 및 개별 대상자 농도-시간 프로파일을 확인합니다.</p></div>
     <div id="s4e" class="card"><div class="es"><div class="esi">📈</div><h3>데이터가 없습니다</h3><p>STEP 02에서 데이터를 입력하면 차트가 표시됩니다.</p></div></div>
     <div id="s4r" style="display:none">
-      <div class="card mb14"><div class="ct">평균 농도-시간 곡선</div><canvas id="mc" height="250"></canvas></div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px;">
+        <div class="card" style="padding:16px 20px;">
+          <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px;">
+            <div class="ct" style="margin-bottom:0;">평균 농도-시간 곡선</div>
+            <span style="font-size:10.5px;font-weight:700;padding:2px 8px;border-radius:10px;background:var(--ac-bg);color:var(--ac);border:1px solid #bfdbfe;">Linear</span>
+          </div>
+          <canvas id="mc" height="260"></canvas>
+        </div>
+        <div class="card" style="padding:16px 20px;">
+          <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px;">
+            <div class="ct" style="margin-bottom:0;">평균 농도-시간 곡선</div>
+            <span style="font-size:10.5px;font-weight:700;padding:2px 8px;border-radius:10px;background:#f0fdf4;color:#16a34a;border:1px solid #bbf7d0;">Log</span>
+          </div>
+          <canvas id="mc-log" height="260"></canvas>
+        </div>
+      </div>
       <div style="font-size:12px;font-weight:600;color:var(--tx3);margin-bottom:10px;text-transform:uppercase;letter-spacing:.4px;">개별 대상자 프로파일</div>
       <div class="sg" id="sg"></div>
     </div>
@@ -394,35 +432,122 @@ input:focus,select:focus,textarea:focus{border-color:var(--ac);box-shadow:0 0 0 
 
   <!-- S5 -->
   <div class="section" id="s5">
-    <div class="ph"><h1>IVIVC 분석</h1><p>Wagner-Nelson Deconvolution으로 in vivo 흡수율을 산출하고 in vitro 용출과 상관시킵니다.</p></div>
+    <div class="ph"><h1>IVIVC 분석</h1><p>Deconvolution으로 in vivo 흡수율(%Fa)을 산출하고 in vitro 용출과 상관시킵니다.</p></div>
     <div class="it">
       <div class="itb active" onclick="ivtab('method',this)">⚙ Deconvolution 설정</div>
       <div class="itb" onclick="ivtab('vitro',this)">🧫 In Vitro 용출 데이터</div>
       <div class="itb" onclick="ivtab('result',this)">📊 IVIVC 상관 결과</div>
+      <div class="itb" onclick="ivtab('conv',this)">🔄 Convolution 예측</div>
     </div>
 
     <div id="iv-method">
-      <div class="tc3">
-        <div>
-          <div class="card">
-            <div class="ct">Wagner-Nelson 설정</div>
-            <div class="fg"><label>소실속도상수 Kel (hr⁻¹)</label><input type="number" id="kel" value="0.08" step="0.01"></div>
-            <div class="fg mb14"><label>분석 대상 데이터</label>
-              <select id="ivd"><option>Test (시험약)</option><option>Reference (대조약)</option><option>평균 (Test + Reference)</option></select>
-            </div>
-            <button class="btn ba" onclick="runDeconv()">▶ Deconvolution 실행</button>
+      <!-- Method selector -->
+      <div class="card" style="margin-bottom:14px;">
+        <div class="ct">Deconvolution 방법 선택</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;">
+          <div id="msel-wn" class="so" style="border-color:var(--ac);background:var(--ac-bg);" onclick="selectMethod('wn')">
+            <div class="soi">1️⃣</div>
+            <div class="sot" style="color:var(--ac);">Wagner-Nelson</div>
+            <div class="sod">1-CMT 모델 기반</div>
           </div>
-        </div>
-        <div>
-          <div class="card">
-            <div class="ct">계산식</div>
-            <div class="fm">%Fa(t) =<br>[C(t) + Kel × AUC(0→t)]<br>─────────────────────<br>[C(∞) + Kel × AUC(0→∞)] × 100</div>
-            <div class="nt ni2">1-compartment 모델 가정. Kel은 말단 log-linear 구간 회귀 또는 문헌값을 사용하세요.</div>
+          <div id="msel-lr" class="so" onclick="selectMethod('lr')">
+            <div class="soi">2️⃣</div>
+            <div class="sot">Loo-Riegelman</div>
+            <div class="sod">2-CMT 모델 기반</div>
+          </div>
+          <div id="msel-nd" class="so" onclick="selectMethod('nd')">
+            <div class="soi">🔁</div>
+            <div class="sot">Numerical Deconv.</div>
+            <div class="sod">모델 독립적 (범용)</div>
           </div>
         </div>
       </div>
+
+      <!-- Wagner-Nelson params -->
+      <div id="pm-wn">
+        <div class="tc3">
+          <div>
+            <div class="card">
+              <div class="ct">Wagner-Nelson 설정</div>
+              <div class="fg"><label>소실속도상수 Kel (hr⁻¹)</label><input type="number" id="kel" value="0.08" step="0.01"></div>
+              <div class="fg mb14"><label>분석 대상 데이터</label>
+                <select id="ivd"><option>Test (시험약)</option><option>Reference (대조약)</option><option>평균 (Test + Reference)</option></select>
+              </div>
+              <button class="btn ba" onclick="runDeconv()">▶ 실행</button>
+            </div>
+          </div>
+          <div>
+            <div class="card">
+              <div class="ct">계산식</div>
+              <div class="fm">%Fa(t) =<br>[C(t) + Kel·AUC(0→t)]<br>──────────────────────<br>[C(∞) + Kel·AUC(0→∞)] × 100</div>
+              <div class="nt ni2">1-CMT 모델 가정. Kel은 말단 log-linear 회귀 또는 문헌값 사용.</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Loo-Riegelman params -->
+      <div id="pm-lr" style="display:none">
+        <div class="tc3">
+          <div>
+            <div class="card">
+              <div class="ct">Loo-Riegelman 설정 (2-CMT)</div>
+              <div class="fg"><label>Kel — 중심구획 소실 (/hr)</label><input type="number" id="lr-kel" value="0.08" step="0.01"></div>
+              <div class="fg"><label>k12 — 중심→말초 전달 (/hr)</label><input type="number" id="lr-k12" value="0.3" step="0.01"></div>
+              <div class="fg"><label>k21 — 말초→중심 전달 (/hr)</label><input type="number" id="lr-k21" value="0.15" step="0.01"></div>
+              <div class="fg mb14"><label>분석 대상 데이터</label>
+                <select id="ivd-lr"><option>Test (시험약)</option><option>Reference (대조약)</option><option>평균 (Test + Reference)</option></select>
+              </div>
+              <button class="btn ba" onclick="runDeconv()">▶ 실행</button>
+            </div>
+          </div>
+          <div>
+            <div class="card">
+              <div class="ct">계산식</div>
+              <div class="fm">%Fa(t) =<br>[C(t) + Kel·AUC_c + Ap(t)/Vc]<br>──────────────────────────────<br>[C(∞) + Kel·AUC_c(∞) + Ap(∞)/Vc] × 100<br><br>Ap(t) = k12·∫C dt − k21·∫Ap dt</div>
+              <div class="nt ni2">2-CMT 모델 기반. IV 데이터에서 k12, k21, Kel을 사전 추정하세요.</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Numerical Deconvolution params -->
+      <div id="pm-nd" style="display:none">
+        <div class="tc3">
+          <div>
+            <div class="card">
+              <div class="ct">Numerical Deconvolution 설정</div>
+              <div class="fg">
+                <label>Unit Impulse Response (UIR) 방법</label>
+                <select id="nd-uir">
+                  <option value="mono">단순 단일지수 (Monoexponential)</option>
+                  <option value="biexp">이중지수 (Biexponential)</option>
+                </select>
+              </div>
+              <div class="fg"><label>α (빠른 지수, /hr)</label><input type="number" id="nd-alpha" value="1.2" step="0.01"></div>
+              <div id="nd-biexp-extra">
+                <div class="fg"><label>β (느린 지수, /hr)</label><input type="number" id="nd-beta" value="0.08" step="0.01"></div>
+                <div class="fg"><label>A (빠른 지수 계수)</label><input type="number" id="nd-A" value="0.6" step="0.01"></div>
+              </div>
+              <div class="fg mb14"><label>분석 대상 데이터</label>
+                <select id="ivd-nd"><option>Test (시험약)</option><option>Reference (대조약)</option><option>평균 (Test + Reference)</option></select>
+              </div>
+              <button class="btn ba" onclick="runDeconv()">▶ 실행</button>
+            </div>
+          </div>
+          <div>
+            <div class="card">
+              <div class="ct">계산 원리</div>
+              <div class="fm">C(t) = ∫₀ᵗ R(τ)·h(t−τ) dτ<br><br>h(t) = A·e^(−αt) + (1−A)·e^(−βt)<br><br>R(t) 수치 역연산 (점진적 잔차법)</div>
+              <div class="nt ni2">모델 독립적. UIR 파라미터는 IV bolus 데이터 fitting으로 추정하세요.</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
       <div id="dr" style="display:none;margin-top:4px;">
         <div style="font-size:12px;font-weight:600;color:var(--tx3);margin-bottom:10px;text-transform:uppercase;letter-spacing:.4px;">Deconvolution 결과 — In Vivo 흡수율 (%Fa)</div>
+        <div id="dr-method-badge" style="margin-bottom:10px;"></div>
         <div class="card"><canvas id="fc" height="230"></canvas></div>
         <div class="card" style="overflow-x:auto;padding:12px;margin-top:12px;"><div id="ft"></div></div>
       </div>
@@ -462,9 +587,133 @@ input:focus,select:focus,textarea:focus{border-color:var(--ac);box-shadow:0 0 0 
       </div>
     </div>
 
-  </div>
+    <!-- ══ CONVOLUTION TAB ══ -->
+    <div id="iv-conv" style="display:none">
 
-  </div><!-- /pg -->
+      <!-- Step guide -->
+      <div style="display:flex;align-items:center;gap:0;margin-bottom:18px;flex-wrap:wrap;">
+        <div style="display:flex;align-items:center;gap:8px;padding:8px 14px;background:var(--ac-bg);border:1.5px solid var(--ac);border-radius:6px;font-size:12px;font-weight:600;color:var(--ac);">① IVIVC 상관식 필요</div>
+        <div style="color:var(--tx3);padding:0 8px;font-size:18px;">→</div>
+        <div style="display:flex;align-items:center;gap:8px;padding:8px 14px;background:var(--bg-s);border:1px solid var(--bd);border-radius:6px;font-size:12px;font-weight:600;color:var(--tx2);">② 새 용출 프로파일 입력</div>
+        <div style="color:var(--tx3);padding:0 8px;font-size:18px;">→</div>
+        <div style="display:flex;align-items:center;gap:8px;padding:8px 14px;background:var(--bg-s);border:1px solid var(--bd);border-radius:6px;font-size:12px;font-weight:600;color:var(--tx2);">③ C(t) 예측 실행</div>
+        <div style="color:var(--tx3);padding:0 8px;font-size:18px;">→</div>
+        <div style="display:flex;align-items:center;gap:8px;padding:8px 14px;background:var(--bg-s);border:1px solid var(--bd);border-radius:6px;font-size:12px;font-weight:600;color:var(--tx2);">④ NCA 자동 산출</div>
+      </div>
+
+      <div class="tc">
+        <!-- LEFT: PK model + new dissolution -->
+        <div>
+          <!-- PK model params for convolution -->
+          <div class="card">
+            <div class="ct">PK 모델 파라미터 (Convolution용)</div>
+            <div class="fg">
+              <label>모델 구조</label>
+              <select id="cv-cmt" onchange="toggleConvCmt()">
+                <option value="1">1-CMT (단순 경구/IR)</option>
+                <option value="2">2-CMT (서방형/ER 권장)</option>
+              </select>
+            </div>
+            <div class="fg"><label>Ka — 흡수속도상수 (/hr)</label><input type="number" id="cv-ka" value="1.2" step="0.01"></div>
+            <div class="fg"><label>Vc — 중심구획 분포용적 (L)</label><input type="number" id="cv-vc" value="20" step="0.1"></div>
+            <div class="fg"><label>CL — 청소율 (L/hr)</label><input type="number" id="cv-cl" value="2.0" step="0.1"></div>
+            <div id="cv-2cmt-extra" style="display:none">
+              <div class="fg"><label>Vp — 말초구획 분포용적 (L)</label><input type="number" id="cv-vp" value="30" step="0.1"></div>
+              <div class="fg"><label>Q — 구획간 청소율 (L/hr)</label><input type="number" id="cv-q" value="4.0" step="0.1"></div>
+            </div>
+            <div class="fg"><label>F — 생체이용률 (fraction)</label><input type="number" id="cv-f" value="1.0" step="0.01" min="0" max="1"></div>
+            <div class="fg" style="margin-bottom:0"><label>시뮬레이션 시간 (hr)</label><input type="number" id="cv-tmax" value="24" step="1"></div>
+          </div>
+
+          <!-- Preset buttons -->
+          <div class="card">
+            <div class="ct">프리셋 — 제형별 PK</div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+              <button class="btn bg bsm" style="justify-content:flex-start;font-size:12px;" onclick="convPreset('ir')">💊 단순제네릭 (IR)</button>
+              <button class="btn bg bsm" style="justify-content:flex-start;font-size:12px;" onclick="convPreset('er')">🕐 서방형 (ER)</button>
+              <button class="btn bg bsm" style="justify-content:flex-start;font-size:12px;" onclick="convPreset('melt')">🌡 구강붕해정 (ODT)</button>
+              <button class="btn bg bsm" style="justify-content:flex-start;font-size:12px;" onclick="convPreset('sr')">🔢 지속방출 (SR)</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- RIGHT: new dissolution input + run -->
+        <div>
+          <div class="card">
+            <div class="ct">새 용출 프로파일 입력</div>
+            <div style="display:flex;gap:6px;margin-bottom:12px;flex-wrap:wrap;">
+              <button class="btn bg bsm" onclick="convDissPreset('ir')">IR 샘플</button>
+              <button class="btn bg bsm" onclick="convDissPreset('er')">ER 샘플</button>
+              <button class="btn bg bsm" onclick="convDissPreset('slow')">서방형 샘플</button>
+              <button class="btn bg bsm" onclick="clearConvDiss()">초기화</button>
+            </div>
+            <div style="display:grid;grid-template-columns:28px 1fr 1fr 28px;gap:6px;margin-bottom:5px;font-size:11px;font-weight:600;color:var(--tx3);text-transform:uppercase;letter-spacing:.3px;">
+              <div></div><div>시간 (hr)</div><div>용출률 (%)</div><div></div>
+            </div>
+            <div id="cv-diss-inputs"></div>
+            <button class="btn bg bsm mt8" onclick="addConvDissRow()">+ 행 추가</button>
+          </div>
+
+          <!-- observed overlay -->
+          <div class="card">
+            <div class="ct">실측 농도 오버레이 (선택)</div>
+            <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;">
+              <input type="checkbox" id="cv-obs-check" style="width:auto;accent-color:var(--ac)" onchange="document.getElementById('cv-obs-area').style.display=this.checked?'block':'none'">
+              <label style="margin:0;font-size:13px;font-weight:500;cursor:pointer" for="cv-obs-check">실측 데이터 오버레이 활성화</label>
+            </div>
+            <div id="cv-obs-area" style="display:none;">
+              <textarea id="cv-obs-paste" rows="5" placeholder="Time	Conc&#10;0	0&#10;1	45.2&#10;2	88.1&#10;...&#10;(탭 구분, 첫 행 헤더)"></textarea>
+            </div>
+          </div>
+
+          <div class="fg" style="margin-top:8px;margin-bottom:8px;">
+            <label>이 예측의 이름 (비교용)</label>
+            <input type="text" id="cv-label" placeholder="예: 배치 A, ER 제형, 신규 공정..." value="프로파일 1">
+          </div>
+          <button class="btn ba" style="width:100%;" onclick="runConvolution()">▶ Convolution 예측 실행</button>
+        </div>
+      </div>
+
+      <!-- Results -->
+      <div id="cv-result" style="display:none;margin-top:8px;">
+        <!-- method badge -->
+        <div id="cv-badge" style="margin-bottom:12px;"></div>
+
+        <!-- C(t) prediction chart -->
+        <div class="card" style="margin-bottom:14px;">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
+            <div class="ct" style="margin-bottom:0;">예측 농도-시간 곡선 C(t)</div>
+            <select id="cv-yscale" style="width:auto;padding:4px 8px;font-size:12px;border:1px solid var(--bd2);border-radius:4px;" onchange="updateConvScale()">
+              <option value="linear">Linear</option>
+              <option value="logarithmic">Log</option>
+            </select>
+          </div>
+          <canvas id="cv-chart" height="280"></canvas>
+        </div>
+
+        <!-- NCA summary chips -->
+        <div class="card" style="margin-bottom:14px;">
+          <div class="ct">예측 NCA 파라미터</div>
+          <div id="cv-nca-chips" style="display:flex;gap:10px;flex-wrap:wrap;"></div>
+        </div>
+
+        <!-- Comparison table when IVIVC corr available -->
+        <div id="cv-compare-wrap" class="card" style="margin-bottom:14px;display:none;">
+          <div class="ct">용출 프로파일별 예측 C(t) 비교</div>
+          <canvas id="cv-compare-chart" height="220"></canvas>
+          <div id="cv-compare-table" style="margin-top:14px;overflow-x:auto;"></div>
+        </div>
+
+        <div class="br">
+          <button class="btn bg bsm" onclick="exportConvCSV()">📥 CSV 다운로드</button>
+          <button class="btn bg bsm" onclick="exportConvReport()">📄 예측 리포트</button>
+          <button class="btn bg bsm" onclick="clearCompare()">🗑 비교 초기화</button>
+        </div>
+      </div>
+
+    </div><!-- /iv-conv -->
+
+  </div><!-- /s5 -->
 </div><!-- /ca -->
 </div><!-- /app -->
 
@@ -486,7 +735,7 @@ function dtab(n,el){
   if(el)el.classList.add('active');
 }
 function ivtab(n,el){
-  ['method','vitro','result'].forEach(t=>document.getElementById('iv-'+t).style.display=t===n?'block':'none');
+  ['method','vitro','result','conv'].forEach(t=>document.getElementById('iv-'+t).style.display=t===n?'block':'none');
   document.querySelectorAll('#s5>.it .itb').forEach(t=>t.classList.remove('active'));
   if(el)el.classList.add('active');
   if(n==='result')tryIVIVC();
@@ -498,19 +747,49 @@ function vtab(n,el){
 }
 
 // S1 SAMPLE SIZE
+let studyDesign = 'crossover';
+
+function setDesign(d, el) {
+  studyDesign = d;
+  const cross = document.getElementById('des-cross');
+  const para  = document.getElementById('des-para');
+  if (d === 'crossover') {
+    cross.className='btn ba'; para.className='btn bg';
+    document.getElementById('cvLabel').textContent='CV% (개체내 변이, CV_w)';
+    document.getElementById('bCvLabel').textContent='CV% (개체내)';
+    document.getElementById('design-note-txt').textContent='개체내 변이(CV_w)를 사용합니다. 동일 대상자에게 시험약·대조약 모두 투여합니다.';
+    document.getElementById('nResultSub').textContent='2×2 crossover design 기준';
+    document.getElementById('bDesign').textContent='2×2 Crossover';
+  } else {
+    para.className='btn ba'; cross.className='btn bg';
+    document.getElementById('cvLabel').textContent='CV% (총 변이, CV_total)';
+    document.getElementById('bCvLabel').textContent='CV% (총 변이)';
+    document.getElementById('design-note-txt').textContent='총 변이(CV_total = √(CV_b²+CV_w²))를 사용합니다. 각 그룹에 시험약 또는 대조약만 투여합니다.';
+    document.getElementById('nResultSub').textContent='Parallel group design 기준 (각 군)';
+    document.getElementById('bDesign').textContent='Parallel Group';
+  }
+  calcSS();
+}
+
 function calcSS(){
   const gmr=parseFloat(document.getElementById('gmr').value)||0.95;
   const cv=parseFloat(document.getElementById('cv').value)||28.5;
   const pwr=parseFloat(document.getElementById('power').value)/100||0.90;
-  const s2=2*Math.pow(Math.log(1+cv/100),2);
-  const zA=zp(0.95),zB=zp(pwr);
-  const d=Math.min(Math.abs(Math.log(gmr)),Math.abs(Math.log(0.8/gmr)));
-  let n=Math.ceil(Math.pow(zA+zB,2)*s2/Math.pow(d,2));
-  if(n%2)n++;
-  document.getElementById('nResult').textContent=n;
+  // Variance factor: crossover = 2*sigma^2 (paired), parallel = 2*sigma^2 (two independent groups, same variance)
+  // For crossover: sigma^2 = ln(1 + (CV_w/100)^2)  -> total var of difference = 2*sigma^2
+  // For parallel:  sigma^2 = ln(1 + (CV_total/100)^2) -> total var = 2*sigma^2 (each group), df = 2(n-1)
+  const sig2 = Math.pow(Math.log(1+(cv/100)**2), 1);
+  const s2 = studyDesign==='crossover' ? 2*sig2 : 2*sig2; // both use 2*sigma^2 of log-diff
+  const zA=zp(0.95), zB=zp(pwr);
+  const d=Math.min(Math.abs(Math.log(gmr)), Math.abs(Math.log(0.8/gmr)));
+  let n = Math.ceil(Math.pow(zA+zB,2)*s2/Math.pow(d,2));
+  if(studyDesign==='crossover' && n%2) n++; // crossover must be even
+  if(studyDesign==='parallel') n = Math.ceil(n); // per group
+  document.getElementById('nResult').textContent = n;
   document.getElementById('bGmr').textContent=gmr.toFixed(2);
   document.getElementById('bCv').textContent=cv.toFixed(1)+'%';
   document.getElementById('bPwr').textContent=(pwr*100).toFixed(0)+'%';
+  document.getElementById('bDesign').textContent=studyDesign==='crossover'?'2×2 Crossover':'Parallel Group';
 }
 function zp(p){
   if(p<=0)return-Infinity;if(p>=1)return Infinity;
@@ -576,19 +855,57 @@ function loadManual(){
 }
 function loadPaste(){applyData(Papa.parse(document.getElementById('pa').value.trim(),{header:true,delimiter:'\t',dynamicTyping:true}).data,'붙여넣기');}
 function loadSample(type){
-  const ts=[0,.5,1,1.5,2,3,4,6,8,12,24],n=type==='highcv'?12:8,base=type==='highcv'?400:650,cv=type==='highcv'?.35:.15;
+  // ── Proper 1-CMT oral PK simulation ──────────────────────
+  // Ka=3.0 /hr, Kel=ln(2)/4=0.1733 /hr → Tmax=ln(Ka/Kel)/(Ka-Kel) ≈ 1.0 hr
+  const Ka=3.0, Kel=Math.LN2/4;  // Kel≈0.1733
+  const ts=[0,0.25,0.5,0.75,1,1.5,2,3,4,6,8,12,24];
+
+  // Dataset specs
+  const spec = type==='highcv'
+    ? { n:12, Dose:100, Vc:18, F:1.0, cvKa:0.35, cvKel:0.30, cvVc:0.35, cvRes:0.08, cmaxBase:null }
+    : { n:8,  Dose:100, Vc:18, F:1.0, cvKa:0.20, cvKel:0.20, cvVc:0.20, cvRes:0.05, cmaxBase:null };
+
+  // LKN (log-normal) random variates with given CV
+  const lnVar=(cv)=>Math.exp((Math.random()*2-1)*cv*1.7); // rough log-normal spread
+
   rawData=[];
-  for(let s=1;s<=n;s++){
-    const seq=s%2?'TR':'RT',rT=.97+(Math.random()-.5)*cv,rR=1+(Math.random()-.5)*cv;
-    for(let p=1;p<=2;p++){
-      const isT=(seq==='TR'&&p===1)||(seq==='RT'&&p===2),cm=base*(isT?rT:rR);
-      ts.forEach(t=>{let c=t===0?0:t<=1.5?cm*(t/1.5):cm*Math.exp(-.08*(t-1.5));rawData.push({Subject:'S'+String(s).padStart(3,'0'),Period:p,Sequence:seq,Time:t,Conc:Math.max(0,c+c*(Math.random()-.5)*.05)});});
+  for(let s=1; s<=spec.n; s++){
+    const seq = s%2===1 ? 'TR' : 'RT';
+    // Individual PK params — T slightly lower Ka (slower release sim), R reference
+    const KaT = Ka  * lnVar(spec.cvKa)  * 0.98;   // Test: slight formulation diff
+    const KaR = Ka  * lnVar(spec.cvKa);
+    const KelI = Kel * lnVar(spec.cvKel);           // shared Kel per subject
+    const VcI  = spec.Vc * lnVar(spec.cvVc);
+
+    for(let p=1; p<=2; p++){
+      const isT = (seq==='TR'&&p===1)||(seq==='RT'&&p===2);
+      const KaI = isT ? KaT : KaR;
+      const coeff = (spec.Dose * spec.F * KaI) / (VcI * (KaI - KelI));
+      ts.forEach(t=>{
+        let c = 0;
+        if(t>0) c = coeff * (Math.exp(-KelI*t) - Math.exp(-KaI*t));
+        // proportional + small additive residual noise
+        const noise = c * spec.cvRes * (Math.random()*2-1);
+        rawData.push({
+          Subject : 'S'+String(s).padStart(3,'0'),
+          Period  : p,
+          Sequence: seq,
+          Time    : t,
+          Conc    : Math.max(0, c + noise)
+        });
+      });
     }
   }
+
+  const n = spec.n;
   document.getElementById('us').style.display='block';
-  document.getElementById('us').style.background='var(--gr-bg)';document.getElementById('us').style.color='#166534';
-  document.getElementById('um').textContent=`샘플 데이터 (${n}명) 로드 완료`;
-  renderPreview();dtab('upload',null);
+  document.getElementById('us').style.background='var(--gr-bg)';
+  document.getElementById('us').style.borderColor='var(--gr-bd)';
+  document.getElementById('us').style.color='#166534';
+  document.getElementById('um').textContent=
+    `샘플 데이터 (${n}명, Ka=1.3/hr, T½=4hr, Tmax≈1hr) 로드 완료`;
+  renderPreview();
+  dtab('upload',null);
   document.querySelectorAll('#s2 .it .itb')[0].classList.add('active');
 }
 
@@ -669,23 +986,99 @@ function renderS4(){
   document.getElementById('s4r').style.display='block';
   const{subs,pks}=pkResults;
   const ts=[...new Set(rawData.map(r=>r.Time))].sort((a,b)=>a-b);
-  const mT={},mR={};ts.forEach(t=>{mT[t]=[];mR[t]=[];});
+  const mT={},mR={};
+  ts.forEach(t=>{mT[t]=[];mR[t]=[];});
   subs.forEach(s=>{
     const pk=pks[s];
     if(pk.T)pk.T.times.forEach((t,i)=>{if(mT[t]!==undefined)mT[t].push(pk.T.concs[i]);});
     if(pk.R)pk.R.times.forEach((t,i)=>{if(mR[t]!==undefined)mR[t].push(pk.R.concs[i]);});
   });
-  const aT=ts.map(t=>mT[t].length?mT[t].reduce((a,b)=>a+b)/mT[t].length:null);
-  const aR=ts.map(t=>mR[t].length?mR[t].reduce((a,b)=>a+b)/mR[t].length:null);
-  if(charts.mean)charts.mean.destroy();
-  charts.mean=new Chart(document.getElementById('mc').getContext('2d'),{
+
+  // mean + SD helper
+  function stats(arr){
+    if(!arr||!arr.length) return {mean:null,sd:0,hi:null,lo:null};
+    const m=arr.reduce((a,b)=>a+b)/arr.length;
+    const sd=arr.length>1?Math.sqrt(arr.reduce((a,v)=>a+(v-m)**2,0)/(arr.length-1)):0;
+    return {mean:m, sd, hi:m+sd, lo:Math.max(0,m-sd)};
+  }
+
+  const stT=ts.map(t=>stats(mT[t]));
+  const stR=ts.map(t=>stats(mR[t]));
+
+  // ── shared dataset builder ──
+  function makeDatasets(aTd, aRd, stTd, stRd, withBand){
+    const ds = [];
+    if(withBand){
+      ds.push({label:'_T_hi',data:aTd.hi,borderColor:'transparent',backgroundColor:'rgba(37,99,235,.10)',fill:'+1',tension:.35,pointRadius:0,borderWidth:0});
+      ds.push({label:'_T_lo',data:aTd.lo,borderColor:'transparent',backgroundColor:'rgba(37,99,235,.10)',fill:false,tension:.35,pointRadius:0,borderWidth:0});
+    }
+    ds.push({label:'Test (mean ± SD)',data:aTd.mean,borderColor:'#2563eb',backgroundColor:'rgba(37,99,235,0)',fill:false,tension:.35,pointRadius:5,pointHoverRadius:7,borderWidth:2.5,pointBackgroundColor:'#fff',pointBorderColor:'#2563eb',pointBorderWidth:2});
+    if(withBand){
+      ds.push({label:'_R_hi',data:aRd.hi,borderColor:'transparent',backgroundColor:'rgba(220,38,38,.08)',fill:'+1',tension:.35,pointRadius:0,borderWidth:0});
+      ds.push({label:'_R_lo',data:aRd.lo,borderColor:'transparent',backgroundColor:'rgba(220,38,38,.08)',fill:false,tension:.35,pointRadius:0,borderWidth:0});
+    }
+    ds.push({label:'Reference (mean ± SD)',data:aRd.mean,borderColor:'#dc2626',backgroundColor:'rgba(220,38,38,0)',fill:false,tension:.35,pointRadius:5,pointHoverRadius:7,borderWidth:2.5,pointBackgroundColor:'#fff',pointBorderColor:'#dc2626',pointBorderWidth:2});
+    return ds;
+  }
+
+  function sharedOpts(yType, stTd, stRd){
+    return {
+      responsive:true,
+      plugins:{
+        legend:{
+          position:'bottom',
+          labels:{font:{family:'Geist,sans-serif',size:12},filter:item=>!item.text.startsWith('_')}
+        },
+        tooltip:{
+          callbacks:{
+            label(ctx){
+              if(ctx.dataset.label.startsWith('_')) return null;
+              const idx=ctx.dataIndex;
+              const isT=ctx.dataset.label.includes('Test');
+              const sd=(isT?stTd:stRd)[idx].sd;
+              const v=ctx.parsed.y;
+              return `${ctx.dataset.label.split(' ')[0]}: ${v.toFixed(2)} ± ${sd.toFixed(2)} ng/mL`;
+            }
+          }
+        }
+      },
+      scales:{
+        x:{title:{display:true,text:'Time (hr)'},grid:{color:'rgba(0,0,0,.05)'}},
+        y:{
+          type:yType,
+          title:{display:true,text:'Conc (ng/mL)'},
+          beginAtZero: yType==='linear',
+          min: yType==='logarithmic' ? undefined : 0,
+          grid:{color:'rgba(0,0,0,.05)'},
+          ticks: yType==='logarithmic' ? {callback: v => v >= 1 ? v.toFixed(0) : v.toFixed(2)} : {}
+        }
+      }
+    };
+  }
+
+  if(charts.mean) charts.mean.destroy();
+  if(charts.meanLog) charts.meanLog.destroy();
+
+  const aTdata  = { mean:stT.map(s=>s.mean), hi:stT.map(s=>s.hi),  lo:stT.map(s=>s.lo)  };
+  const aRdata  = { mean:stR.map(s=>s.mean), hi:stR.map(s=>s.hi),  lo:stR.map(s=>s.lo)  };
+
+  // Linear chart — with SD band
+  charts.mean = new Chart(document.getElementById('mc').getContext('2d'),{
     type:'line',
-    data:{labels:ts,datasets:[
-      {label:'Test',data:aT,borderColor:'#2563eb',backgroundColor:'rgba(37,99,235,.06)',fill:true,tension:.3,pointRadius:4,borderWidth:2},
-      {label:'Reference',data:aR,borderColor:'#dc2626',backgroundColor:'rgba(220,38,38,.04)',fill:true,tension:.3,pointRadius:4,borderWidth:2}
-    ]},
-    options:{responsive:true,plugins:{legend:{position:'bottom',labels:{font:{family:'Geist,sans-serif',size:12}}}},scales:{x:{title:{display:true,text:'Time (hr)'}},y:{title:{display:true,text:'Conc (ng/mL)'},beginAtZero:true}}}
+    data:{labels:ts, datasets: makeDatasets(aTdata, aRdata, stT, stR, true)},
+    options: sharedOpts('linear', stT, stR)
   });
+
+  // Log chart — mean lines only (no band, avoids log(0) issues)
+  const aTlog = { mean: stT.map(s=> s.mean > 0.001 ? s.mean : null), hi:[], lo:[] };
+  const aRlog = { mean: stR.map(s=> s.mean > 0.001 ? s.mean : null), hi:[], lo:[] };
+  charts.meanLog = new Chart(document.getElementById('mc-log').getContext('2d'),{
+    type:'line',
+    data:{labels:ts, datasets: makeDatasets(aTlog, aRlog, stT, stR, false)},
+    options: sharedOpts('logarithmic', stT, stR)
+  });
+
+  // Individual subject mini-charts (unchanged)
   const grid=document.getElementById('sg');grid.innerHTML='';
   Object.keys(charts).forEach(k=>{if(k.startsWith('sc_')){charts[k].destroy();delete charts[k];}});
   subs.forEach(sub=>{
@@ -695,8 +1088,8 @@ function renderS4(){
     grid.appendChild(div);
     requestAnimationFrame(()=>{
       const ds=[];
-      if(pk.T)ds.push({label:'T',data:pk.T.concs,borderColor:'#2563eb',borderWidth:1.5,pointRadius:1.5,tension:.3,fill:false});
-      if(pk.R)ds.push({label:'R',data:pk.R.concs,borderColor:'#dc2626',borderWidth:1.5,pointRadius:1.5,tension:.3,fill:false});
+      if(pk.T)ds.push({label:'T',data:pk.T.concs,borderColor:'#2563eb',borderWidth:1.5,pointRadius:2,tension:.35,fill:false,pointBackgroundColor:'#fff',pointBorderColor:'#2563eb',pointBorderWidth:1.5});
+      if(pk.R)ds.push({label:'R',data:pk.R.concs,borderColor:'#dc2626',borderWidth:1.5,pointRadius:2,tension:.35,fill:false,pointBackgroundColor:'#fff',pointBorderColor:'#dc2626',pointBorderWidth:1.5});
       charts[`sc_${sub}`]=new Chart(document.getElementById(`c_${sub}`).getContext('2d'),{
         type:'line',data:{labels:pk.T?.times||pk.R?.times||[],datasets:ds},
         options:{responsive:true,plugins:{legend:{display:false}},scales:{x:{display:false},y:{display:false}},animation:false}
@@ -705,32 +1098,143 @@ function renderS4(){
   });
 }
 
-// S5 IVIVC
+// S5 IVIVC — method selector
+let ivivcMethod = 'wn';
+
+function selectMethod(m) {
+  ivivcMethod = m;
+  ['wn','lr','nd'].forEach(id => {
+    const sel = document.getElementById('msel-'+id);
+    const pm  = document.getElementById('pm-'+id);
+    const active = id===m;
+    sel.style.borderColor = active ? 'var(--ac)' : '';
+    sel.style.background  = active ? 'var(--ac-bg)' : '';
+    sel.querySelector('.sot').style.color = active ? 'var(--ac)' : '';
+    pm.style.display = active ? 'block' : 'none';
+  });
+  // toggle biexp extras
+  if(m==='nd') {
+    document.getElementById('nd-uir').onchange = () => {
+      const bx = document.getElementById('nd-biexp-extra');
+      bx.style.display = document.getElementById('nd-uir').value==='biexp' ? 'block' : 'none';
+    };
+    document.getElementById('nd-uir').onchange();
+  }
+}
+
+function getAvgPK(selEl) {
+  if(!pkResults) return null;
+  const sel = selEl ? selEl.value : 'Test (시험약)';
+  const {subs, pks} = pkResults;
+  let pa = [];
+  if(sel.includes('Test'))      pa = subs.map(s=>pks[s].T).filter(Boolean);
+  else if(sel.includes('Reference')) pa = subs.map(s=>pks[s].R).filter(Boolean);
+  else pa = [...subs.map(s=>pks[s].T),...subs.map(s=>pks[s].R)].filter(Boolean);
+  const ats = [...new Set(pa.flatMap(p=>p.times))].sort((a,b)=>a-b);
+  const ac = ats.map(t=>{
+    const vs = pa.map(p=>{const i=p.times.indexOf(t);return i>=0?p.concs[i]:null;}).filter(v=>v!==null);
+    return vs.length ? vs.reduce((a,b)=>a+b)/vs.length : 0;
+  });
+  return {times:ats, concs:ac};
+}
+
 function runDeconv(){
-  if(!pkResults)return alert('STEP 02에서 PK 데이터를 먼저 입력하세요.');
-  const kel=parseFloat(document.getElementById('kel').value)||.08;
-  const sel=document.getElementById('ivd').value;
-  const{subs,pks}=pkResults;
-  let pa=[];
-  if(sel.includes('Test'))pa=subs.map(s=>pks[s].T).filter(Boolean);
-  else if(sel.includes('Reference'))pa=subs.map(s=>pks[s].R).filter(Boolean);
-  else pa=[...subs.map(s=>pks[s].T),...subs.map(s=>pks[s].R)].filter(Boolean);
-  const ats=[...new Set(pa.flatMap(p=>p.times))].sort((a,b)=>a-b);
-  const ac=ats.map(t=>{const vs=pa.map(p=>{const i=p.times.indexOf(t);return i>=0?p.concs[i]:null;}).filter(v=>v!==null);return vs.length?vs.reduce((a,b)=>a+b)/vs.length:0;});
-  let cum=0;const aucA=[0];
-  for(let i=1;i<ats.length;i++){cum+=(ats[i]-ats[i-1])*(ac[i]+ac[i-1])/2;aucA.push(cum);}
-  const cl=ac[ac.length-1],ainf=cum+cl/kel,den=cl+kel*ainf;
-  const fa=ats.map((t,i)=>Math.min(100,Math.max(0,(ac[i]+kel*aucA[i])/den*100)));
+  if(!pkResults) return alert('STEP 02에서 PK 데이터를 먼저 입력하세요.');
+  if(ivivcMethod==='wn')  runWN();
+  else if(ivivcMethod==='lr') runLR();
+  else runND();
+}
+
+/* ── Wagner-Nelson ── */
+function runWN(){
+  const kel = parseFloat(document.getElementById('kel').value)||.08;
+  const avg  = getAvgPK(document.getElementById('ivd'));
+  const {times:ats, concs:ac} = avg;
+  let cum=0; const aucA=[0];
+  for(let i=1;i<ats.length;i++){cum+=(ats[i]-ats[i-1])*(ac[i]+ac[i-1])/2; aucA.push(cum);}
+  const cl=ac[ac.length-1], ainf=cum+cl/kel, den=cl+kel*ainf;
+  const fa=ats.map((_,i)=>Math.min(100,Math.max(0,(ac[i]+kel*aucA[i])/den*100)));
   faData={times:ats,fa,concs:ac};
+  renderDeconvResult(ats,fa,ac,aucA,'Wagner-Nelson (1-CMT)','#2563eb');
+}
+
+/* ── Loo-Riegelman ── */
+function runLR(){
+  const kel = parseFloat(document.getElementById('lr-kel').value)||.08;
+  const k12 = parseFloat(document.getElementById('lr-k12').value)||.3;
+  const k21 = parseFloat(document.getElementById('lr-k21').value)||.15;
+  const avg  = getAvgPK(document.getElementById('ivd-lr'));
+  const {times:ts, concs:C} = avg;
+  const n = ts.length;
+  // Peripheral amount via numerical integration of dAp/dt = k12*Vc*C - k21*Ap
+  // We work in concentration-normalised units (assume Vc=1, then scale cancels)
+  const Ap = new Array(n).fill(0);
+  for(let i=1;i<n;i++){
+    const dt = ts[i]-ts[i-1];
+    const dAp = k12*C[i-1] - k21*Ap[i-1];
+    Ap[i] = Math.max(0, Ap[i-1] + dt*dAp);
+  }
+  let cum=0; const aucC=[0];
+  for(let i=1;i<n;i++){cum+=(ts[i]-ts[i-1])*(C[i]+C[i-1])/2; aucC.push(cum);}
+  const clast=C[n-1], aucInf=cum+clast/kel;
+  const ApLast=Ap[n-1], aucApInf=ApLast/k21;
+  const denom = clast + kel*aucInf + ApLast;
+  const fa = ts.map((_,i)=>Math.min(100,Math.max(0,(C[i]+kel*aucC[i]+Ap[i])/denom*100)));
+  faData={times:ts,fa,concs:C};
+  renderDeconvResult(ts,fa,C,aucC,'Loo-Riegelman (2-CMT)','#7c3aed');
+}
+
+/* ── Numerical Deconvolution ── */
+function runND(){
+  const uir   = document.getElementById('nd-uir').value;
+  const alpha = parseFloat(document.getElementById('nd-alpha').value)||1.2;
+  const beta  = parseFloat(document.getElementById('nd-beta').value)||.08;
+  const A     = parseFloat(document.getElementById('nd-A').value)||.6;
+  const avg   = getAvgPK(document.getElementById('ivd-nd'));
+  const {times:ts, concs:C} = avg;
+  const n = ts.length;
+  // UIR: h(t) = A*exp(-alpha*t) + (1-A)*exp(-beta*t)  [biexp]  or  exp(-alpha*t) [mono]
+  const h = t => uir==='biexp'
+    ? A*Math.exp(-alpha*t) + (1-A)*Math.exp(-beta*t)
+    : Math.exp(-alpha*t);
+  // Progressive residual (point-by-point Bateman deconvolution)
+  const R = new Array(n).fill(0);
+  for(let i=0;i<n;i++){
+    let conv=0;
+    for(let j=0;j<i;j++){
+      const dt=ts[j+1]-ts[j];
+      conv += (R[j]*h(ts[i]-ts[j]) + (j>0?R[j-1]*h(ts[i]-ts[j-1]):0))/2*dt;
+    }
+    R[i] = Math.max(0, (C[i]-conv) / h(0));
+  }
+  // %Fa = cumulative R / total R
+  let cumR=0; const cumArr=[0];
+  for(let i=1;i<n;i++){cumR+=(ts[i]-ts[i-1])*(R[i]+R[i-1])/2; cumArr.push(cumR);}
+  const totalR = cumArr[n-1] || 1;
+  const fa = cumArr.map(v=>Math.min(100,Math.max(0,v/totalR*100)));
+  let cum=0; const aucA=[0];
+  for(let i=1;i<n;i++){cum+=(ts[i]-ts[i-1])*(C[i]+C[i-1])/2; aucA.push(cum);}
+  faData={times:ts,fa,concs:C};
+  renderDeconvResult(ts,fa,C,aucA,`Numerical Deconvolution (${uir==='biexp'?'Biexp':'Mono'})`, '#16a34a');
+}
+
+/* ── Shared render ── */
+function renderDeconvResult(ats,fa,ac,aucA,label,color){
   document.getElementById('dr').style.display='block';
+  const badge=document.getElementById('dr-method-badge');
+  badge.innerHTML=`<span style="display:inline-flex;align-items:center;gap:6px;padding:4px 12px;border-radius:20px;font-size:12px;font-weight:600;background:${color}18;border:1.5px solid ${color};color:${color}">▶ ${label}</span>`;
   if(charts.fa)charts.fa.destroy();
   charts.fa=new Chart(document.getElementById('fc').getContext('2d'),{
     type:'line',
     data:{labels:ats,datasets:[
-      {label:'%Fa (In Vivo 흡수율)',data:fa,borderColor:'#2563eb',backgroundColor:'rgba(37,99,235,.07)',fill:true,tension:.3,pointRadius:4,borderWidth:2},
-      {label:'평균 농도',data:ac,borderColor:'#9ca3af',borderDash:[4,4],fill:false,tension:.3,pointRadius:3,yAxisID:'y2'}
+      {label:'%Fa (In Vivo 흡수율)',data:fa,borderColor:color,backgroundColor:color+'12',fill:true,tension:.3,pointRadius:3,borderWidth:2},
+      {label:'평균 농도',data:ac,borderColor:'#9ca3af',borderDash:[4,4],fill:false,tension:.3,pointRadius:2,yAxisID:'y2'}
     ]},
-    options:{responsive:true,plugins:{legend:{position:'bottom'}},scales:{x:{title:{display:true,text:'Time (hr)'}},y:{title:{display:true,text:'%Fa'},min:0,max:105},y2:{position:'right',title:{display:true,text:'Conc (ng/mL)'},grid:{drawOnChartArea:false}}}}
+    options:{responsive:true,plugins:{legend:{position:'bottom'}},scales:{
+      x:{title:{display:true,text:'Time (hr)'}},
+      y:{title:{display:true,text:'%Fa'},min:0,max:105},
+      y2:{position:'right',title:{display:true,text:'Conc (ng/mL)'},grid:{drawOnChartArea:false}}
+    }}
   });
   let tbl=`<table class="dt"><thead><tr><th>Time (hr)</th><th>Avg Conc</th><th>Cum AUC</th><th>%Fa</th></tr></thead><tbody>`;
   ats.forEach((t,i)=>{tbl+=`<tr><td>${t}</td><td>${ac[i].toFixed(2)}</td><td>${aucA[i].toFixed(1)}</td><td><strong>${fa[i].toFixed(1)}%</strong></td></tr>`;});
@@ -775,6 +1279,10 @@ function renderIVIVC(){
   });
   const{slope,intercept,r2}=linReg(vD,faV);
   const r=Math.sqrt(r2)*(slope>=0?1:-1);
+  // ★ Store for Convolution module
+  window._ivivcSlope = slope;
+  window._ivivcIntercept = intercept;
+  window._ivivcR = r;
   if(charts.iv)charts.iv.destroy();
   charts.iv=new Chart(document.getElementById('icc').getContext('2d'),{
     type:'scatter',
@@ -809,7 +1317,359 @@ function renderIVIVC(){
   });
 }
 
-// EXPORT
+// ═══════════════════════════════════════════════════════════
+// CONVOLUTION MODULE
+// ═══════════════════════════════════════════════════════════
+
+/* ── Helpers ── */
+function toggleConvCmt(){
+  const n = document.getElementById('cv-cmt').value;
+  document.getElementById('cv-2cmt-extra').style.display = n==='2'?'block':'none';
+}
+
+function addConvDissRow(t='', d=''){
+  const c = document.getElementById('cv-diss-inputs');
+  const idx = c.children.length + 1;
+  const div = document.createElement('div');
+  div.style.cssText = 'display:grid;grid-template-columns:28px 1fr 1fr 28px;gap:6px;align-items:center;margin-bottom:5px;';
+  div.innerHTML = `<span style="font-size:11px;color:var(--tx3);text-align:right">${idx}</span>
+    <input type="number" step="any" class="cvt" value="${t}" placeholder="0">
+    <input type="number" step="any" class="cvd" value="${d}" placeholder="0">
+    <button onclick="this.parentElement.remove()" style="background:none;border:none;cursor:pointer;color:var(--tx3);font-size:16px;line-height:1">×</button>`;
+  c.appendChild(div);
+}
+
+function clearConvDiss(){ document.getElementById('cv-diss-inputs').innerHTML=''; }
+
+function getConvDiss(){
+  const rows = [];
+  document.querySelectorAll('#cv-diss-inputs>div').forEach(row=>{
+    const t=parseFloat(row.querySelector('.cvt')?.value), d=parseFloat(row.querySelector('.cvd')?.value);
+    if(!isNaN(t)&&!isNaN(d)) rows.push({time:t, diss:d});
+  });
+  return rows.sort((a,b)=>a.time-b.time);
+}
+
+/* ── Presets: PK params ── */
+const convPKPresets = {
+  ir:   { cmt:'1', ka:1.5,  vc:18,  cl:2.5,  vp:0,   q:0,   f:1.0,  tmax:24  },
+  er:   { cmt:'2', ka:0.35, vc:15,  cl:2.0,  vp:35,  q:4.0, f:0.9,  tmax:36  },
+  melt: { cmt:'1', ka:3.0,  vc:12,  cl:3.0,  vp:0,   q:0,   f:1.0,  tmax:12  },
+  sr:   { cmt:'2', ka:0.2,  vc:20,  cl:1.8,  vp:50,  q:3.0, f:0.85, tmax:48  },
+};
+function convPreset(k){
+  const p = convPKPresets[k];
+  document.getElementById('cv-cmt').value = p.cmt;
+  document.getElementById('cv-ka').value  = p.ka;
+  document.getElementById('cv-vc').value  = p.vc;
+  document.getElementById('cv-cl').value  = p.cl;
+  document.getElementById('cv-vp').value  = p.vp;
+  document.getElementById('cv-q').value   = p.q;
+  document.getElementById('cv-f').value   = p.f;
+  document.getElementById('cv-tmax').value= p.tmax;
+  toggleConvCmt();
+}
+
+/* ── Presets: dissolution profiles ── */
+const convDissPresets = {
+  ir:   [[0,0],[0.25,30],[0.5,55],[0.75,72],[1,84],[1.5,93],[2,97],[3,100],[6,100],[12,100]],
+  er:   [[0,0],[1,12],[2,22],[3,32],[4,42],[6,58],[8,70],[10,80],[12,87],[16,94],[20,98],[24,100]],
+  slow: [[0,0],[1,8],[2,16],[4,30],[6,44],[8,56],[10,65],[12,73],[16,84],[20,92],[24,97],[30,100]],
+};
+function convDissPreset(k){
+  clearConvDiss();
+  convDissPresets[k].forEach(([t,d])=>addConvDissRow(t,d));
+}
+
+/* ── RK4 ODE for 1-CMT and 2-CMT with time-varying input R(t) ── */
+function convODE(y, p, R_t, cmt){
+  const {ka, Vc, CL, Vp, Q} = p;
+  const Ke = CL/Vc;
+  const dy = new Array(y.length).fill(0);
+  if(cmt===1){
+    // y = [Adepot, Ac]
+    dy[0] = R_t - ka*y[0];
+    dy[1] = ka*y[0] - Ke*y[1];
+  } else {
+    // y = [Adepot, Ac, Ap]
+    const k12=Q/Vc, k21=Q/Vp;
+    dy[0] = R_t - ka*y[0];
+    dy[1] = ka*y[0] - (Ke+k12)*y[1] + k21*y[2];
+    dy[2] = k12*y[1] - k21*y[2];
+  }
+  return dy;
+}
+
+function rk4Conv(y, dt, p, R_t, cmt){
+  const f=(yy,R)=>convODE(yy,p,R,cmt);
+  const k1=f(y,R_t);
+  const y2=y.map((v,i)=>v+dt/2*k1[i]);
+  const k2=f(y2,R_t);
+  const y3=y.map((v,i)=>v+dt/2*k2[i]);
+  const k3=f(y3,R_t);
+  const y4=y.map((v,i)=>v+dt*k3[i]);
+  const k4=f(y4,R_t);
+  return y.map((v,i)=>Math.max(0,v+dt/6*(k1[i]+2*k2[i]+2*k3[i]+k4[i])));
+}
+
+/* ── Core Convolution: dissolution profile → C(t) ── */
+function dissToConc(dissProfile, pkp, cmt, totalTime, hasIVIVC, ivivcSlope, ivivcIntercept){
+  const dt = 0.05;
+  const times = [], concs = [];
+  const nState = cmt===1 ? 2 : 3;
+  let y = new Array(nState).fill(0);
+
+  // Interpolate dissolution % at time t
+  function interpDiss(t){
+    if(t<=dissProfile[0].time) return dissProfile[0].diss;
+    if(t>=dissProfile[dissProfile.length-1].time) return dissProfile[dissProfile.length-1].diss;
+    for(let i=1;i<dissProfile.length;i++){
+      if(dissProfile[i].time>=t){
+        const f=(t-dissProfile[i-1].time)/(dissProfile[i].time-dissProfile[i-1].time);
+        return dissProfile[i-1].diss + f*(dissProfile[i].diss-dissProfile[i-1].diss);
+      }
+    }
+    return dissProfile[dissProfile.length-1].diss;
+  }
+
+  // dDiss/dt (rate of dissolution, %/hr) → input rate R(t) in amount/hr
+  // If IVIVC correlation exists: convert Diss% → %Fa first
+  // R(t) = F * Dose * d(%Fa)/dt  (absorption rate as fraction per hour * Dose)
+  // We work in normalised dose units (Dose=1), Vc gives conc directly
+  const Dose = pkp.F; // normalised so C = Amount/Vc
+
+  let prevFa = 0, prevDiss = 0;
+  for(let t=0; t<=totalTime+dt/2; t=Math.round((t+dt)*10000)/10000){
+    const diss_t = interpDiss(t);
+
+    // Convert dissolution → %Fa via IVIVC regression (if available)
+    let fa_t = diss_t; // default: 1:1 if no correlation
+    if(hasIVIVC){
+      fa_t = Math.min(100, Math.max(0, ivivcSlope*diss_t + ivivcIntercept));
+    }
+
+    // dFa/dt → absorption rate (fraction/hr * Dose)
+    const dFa_dt = Math.max(0, (fa_t - prevFa) / dt);
+    const R_t = (Dose/100) * dFa_dt; // input rate in amount/(hr·Vc)
+
+    const Vc = pkp.Vc;
+    times.push(parseFloat(t.toFixed(4)));
+    concs.push(Math.max(0, y[cmt===1?1:1] / Vc));
+
+    y = rk4Conv(y, dt, pkp, R_t, cmt);
+    prevFa = fa_t;
+    prevDiss = diss_t;
+  }
+
+  return {times, concs};
+}
+
+/* ── NCA for predicted C(t) ── */
+function quickNCA(times, concs){
+  const Cmax = Math.max(...concs);
+  const Tmax = times[concs.indexOf(Cmax)];
+  let AUClast=0;
+  for(let i=1;i<times.length;i++){
+    const dt=times[i]-times[i-1],c1=concs[i-1],c2=concs[i];
+    if(c1>0&&c2>0&&Math.abs(c1-c2)>1e-10) AUClast+=dt*(c1-c2)/Math.log(c1/c2);
+    else AUClast+=dt*(c1+c2)/2;
+  }
+  // Terminal Kel from last 5 points
+  const n=times.length;
+  const logC=concs.slice(-6).map(c=>c>0?Math.log(c):-Infinity).filter(isFinite);
+  const logT=times.slice(n-logC.length);
+  let Kel=0.1;
+  if(logC.length>=3){const{slope}=linReg(logT,logC);if(slope<0)Kel=-slope;}
+  const Clast=concs[n-1];
+  const AUCinf=AUClast+Clast/Kel;
+  const T12=Math.LN2/Kel;
+  return {Cmax,Tmax,AUClast,AUCinf,T12,Kel};
+}
+
+/* ── Main: run Convolution ── */
+let convResult = null;
+let convCompareResults = []; // for multi-profile comparison
+
+function runConvolution(){
+  // Check IVIVC correlation (optional but recommended)
+  const hasIVIVC = (window._ivivcSlope !== undefined && window._ivivcSlope !== null);
+  const slope     = hasIVIVC ? window._ivivcSlope     : 1.0;
+  const intercept = hasIVIVC ? window._ivivcIntercept : 0.0;
+
+  const dissProfile = getConvDiss();
+  if(dissProfile.length < 3) return alert('용출 데이터를 최소 3개 시점 이상 입력하세요.');
+
+  const cmt = parseInt(document.getElementById('cv-cmt').value)||1;
+  const pkp = {
+    ka: parseFloat(document.getElementById('cv-ka').value)||1.2,
+    Vc: parseFloat(document.getElementById('cv-vc').value)||20,
+    CL: parseFloat(document.getElementById('cv-cl').value)||2.0,
+    Vp: parseFloat(document.getElementById('cv-vp').value)||30,
+    Q:  parseFloat(document.getElementById('cv-q').value)||4.0,
+    F:  parseFloat(document.getElementById('cv-f').value)||1.0,
+  };
+  const totalTime = parseFloat(document.getElementById('cv-tmax').value)||24;
+
+  const {times, concs} = dissToConc(dissProfile, pkp, cmt, totalTime, hasIVIVC, slope, intercept);
+  const nca = quickNCA(times, concs);
+  const label = document.getElementById('cv-label').value.trim() || `프로파일 ${convCompareResults.length+1}`;
+  convResult = {times, concs, nca, pkp, cmt, dissProfile, hasIVIVC, label};
+
+  // Add to comparison history (keep last 5)
+  convCompareResults.push({...convResult});
+  if(convCompareResults.length > 5) convCompareResults.shift();
+  // Auto-increment label for next run
+  const m = label.match(/^(.*?)(\d+)$/);
+  if(m) document.getElementById('cv-label').value = m[1]+(parseInt(m[2])+1);
+
+  // Observed overlay
+  let obsData = null;
+  if(document.getElementById('cv-obs-check').checked){
+    const raw = document.getElementById('cv-obs-paste').value.trim();
+    if(raw){
+      const parsed = Papa.parse(raw,{header:true,delimiter:'\t',dynamicTyping:true}).data;
+      obsData = parsed.map(r=>({
+        x: parseFloat(r.Time??r.time??0),
+        y: parseFloat(r.Conc??r.conc??r.Concentration??0)
+      })).filter(r=>!isNaN(r.x)&&!isNaN(r.y));
+    }
+  }
+
+  renderConvResult(times, concs, nca, obsData, hasIVIVC, cmt);
+  if(convCompareResults.length > 1) renderConvComparison();
+}
+
+function renderConvResult(times, concs, nca, obsData, hasIVIVC, cmt){
+  document.getElementById('cv-result').style.display='block';
+
+  // Badge
+  const ivivcNote = hasIVIVC
+    ? `<span style="margin-left:8px;font-size:11px;background:var(--gr-bg);border:1px solid var(--gr-bd);color:var(--gr);padding:2px 8px;border-radius:10px;font-weight:600;">✓ IVIVC 상관식 적용 (r=${(window._ivivcR||0).toFixed(3)})</span>`
+    : `<span style="margin-left:8px;font-size:11px;background:var(--am-bg);border:1px solid #fde68a;color:var(--am);padding:2px 8px;border-radius:10px;font-weight:600;">⚠ IVIVC 상관식 미적용 — 먼저 IVIVC 상관 결과 탭을 실행하세요</span>`;
+  document.getElementById('cv-badge').innerHTML =
+    `<span style="display:inline-flex;align-items:center;gap:6px;padding:4px 12px;border-radius:20px;font-size:12px;font-weight:600;background:#eff6ff;border:1.5px solid #2563eb;color:#2563eb">🔄 Convolution 예측 — ${cmt}-CMT</span>${ivivcNote}`;
+
+  // Chart
+  const datasets = [{
+    label:'예측 C(t)',
+    data: times.map((t,i)=>({x:t, y:concs[i]})),
+    borderColor:'#2563eb', backgroundColor:'rgba(37,99,235,.07)',
+    fill:true, tension:.3, pointRadius:0, borderWidth:2.5
+  }];
+  if(obsData && obsData.length){
+    datasets.push({
+      label:'실측 농도',
+      data: obsData,
+      borderColor:'#dc2626', backgroundColor:'#dc2626',
+      type:'scatter', pointRadius:5, borderWidth:0, showLine:false
+    });
+  }
+  const scale = document.getElementById('cv-yscale').value;
+  if(charts.conv) charts.conv.destroy();
+  charts.conv = new Chart(document.getElementById('cv-chart').getContext('2d'),{
+    type:'line',
+    data:{datasets},
+    options:{
+      responsive:true, parsing:false,
+      plugins:{legend:{position:'bottom',labels:{font:{family:'Geist,sans-serif',size:12}}}},
+      scales:{
+        x:{type:'linear',title:{display:true,text:'Time (hr)'}},
+        y:{type:scale,title:{display:true,text:'농도 (ng/mL)'},beginAtZero:scale==='linear'}
+      }
+    }
+  });
+
+  // NCA chips
+  const chipsEl = document.getElementById('cv-nca-chips');
+  chipsEl.innerHTML = [
+    {l:'Cmax',   v:nca.Cmax.toFixed(2),   u:'ng/mL'},
+    {l:'Tmax',   v:nca.Tmax.toFixed(2),   u:'hr'},
+    {l:'AUClast',v:nca.AUClast.toFixed(1), u:'ng·hr/mL'},
+    {l:'AUCinf', v:nca.AUCinf.toFixed(1),  u:'ng·hr/mL'},
+    {l:'T½',     v:nca.T12.toFixed(2),     u:'hr'},
+    {l:'Kel',    v:nca.Kel.toFixed(4),     u:'/hr'},
+  ].map(c=>`<div class="chip"><div class="cl">${c.l}</div><div class="cv">${c.v}</div><div class="cu">${c.u}</div></div>`).join('');
+}
+
+/* ── Multi-profile comparison ── */
+const compColors = ['#2563eb','#dc2626','#16a34a','#d97706','#7c3aed'];
+function renderConvComparison(){
+  document.getElementById('cv-compare-wrap').style.display='block';
+  const datasets = convCompareResults.map((r,i)=>({
+    label: r.label,
+    data: r.times.map((t,j)=>({x:t, y:r.concs[j]})),
+    borderColor: compColors[i%compColors.length],
+    fill:false, tension:.3, pointRadius:0, borderWidth:2, parsing:false
+  }));
+  if(charts.convCmp) charts.convCmp.destroy();
+  charts.convCmp = new Chart(document.getElementById('cv-compare-chart').getContext('2d'),{
+    type:'line', data:{datasets},
+    options:{
+      responsive:true, parsing:false,
+      plugins:{legend:{position:'bottom',labels:{font:{family:'Geist,sans-serif',size:12}}}},
+      scales:{
+        x:{type:'linear',title:{display:true,text:'Time (hr)'}},
+        y:{title:{display:true,text:'농도 (ng/mL)'},beginAtZero:true}
+      }
+    }
+  });
+  // NCA comparison table
+  let tbl = `<table class="rt"><thead><tr><th>프로파일</th><th>Cmax</th><th>Tmax</th><th>AUClast</th><th>AUCinf</th><th>T½</th></tr></thead><tbody>`;
+  convCompareResults.forEach((r,i)=>{
+    const n=r.nca;
+    tbl+=`<tr>
+      <td><span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:${compColors[i%compColors.length]};margin-right:6px;vertical-align:middle;"></span>${r.label}</td>
+      <td class="mono">${n.Cmax.toFixed(2)}</td>
+      <td class="mono">${n.Tmax.toFixed(2)}</td>
+      <td class="mono">${n.AUClast.toFixed(1)}</td>
+      <td class="mono">${n.AUCinf.toFixed(1)}</td>
+      <td class="mono">${n.T12.toFixed(2)}</td>
+    </tr>`;
+  });
+  tbl+='</tbody></table>';
+  document.getElementById('cv-compare-table').innerHTML = tbl;
+}
+
+function clearCompare(){
+  convCompareResults=[];
+  document.getElementById('cv-compare-wrap').style.display='none';
+}
+
+function updateConvScale(){
+  if(!charts.conv) return;
+  const scale = document.getElementById('cv-yscale').value;
+  charts.conv.options.scales.y.type = scale;
+  charts.conv.options.scales.y.beginAtZero = scale==='linear';
+  charts.conv.update();
+}
+
+/* ── Export ── */
+function exportConvCSV(){
+  if(!convResult) return alert('예측을 먼저 실행하세요.');
+  let csv='Time,Predicted_Conc\n';
+  convResult.times.forEach((t,i)=>{ csv+=`${t},${convResult.concs[i].toFixed(6)}\n`; });
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(new Blob([csv],{type:'text/csv'}));
+  a.download=`Convolution_Prediction_${new Date().toISOString().slice(0,10)}.csv`;
+  a.click();
+}
+
+function exportConvReport(){
+  if(!convResult) return alert('예측을 먼저 실행하세요.');
+  const {nca,pkp,cmt} = convResult;
+  const ts = new Date().toISOString().slice(0,10);
+  const txt = `Convolution 예측 보고서\n생성일: ${ts}\n분석 도구: PK Analyzer\n개발자: Taeheon Kim, PhD\n\n`
+    + `=== PK 모델 ===\n${cmt}-CMT | Ka=${pkp.ka} /hr | Vc=${pkp.Vc} L | CL=${pkp.CL} L/hr | F=${pkp.F}\n\n`
+    + `=== 예측 NCA ===\nCmax:    ${nca.Cmax.toFixed(3)} ng/mL\nTmax:    ${nca.Tmax.toFixed(3)} hr\n`
+    + `AUClast: ${nca.AUClast.toFixed(2)} ng·hr/mL\nAUCinf:  ${nca.AUCinf.toFixed(2)} ng·hr/mL\n`
+    + `T½:      ${nca.T12.toFixed(3)} hr\nKel:     ${nca.Kel.toFixed(4)} /hr\n`;
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(new Blob(['\uFEFF'+txt],{type:'text/plain;charset=utf-8'}));
+  a.download=`Convolution_Report_${ts}.txt`;
+  a.click();
+}
+
+// ═══════════════════════════════════════════════════════════
 function exportRpt(){
   if(!pkResults)return alert('분석 결과가 없습니다.');
   const{cr,ar,ir}=pkResults,ts=new Date().toISOString().slice(0,10);
@@ -836,6 +1696,7 @@ function exportExcel_s1(){
 // INIT
 window.addEventListener('DOMContentLoaded',()=>{
   calcSS();
+  selectMethod('wn');
   [[0,0],[.5,''],[1,''],[2,''],[3,''],[4,''],[6,''],[8,''],[12,'']].forEach(([t,d])=>addVR(t,d));
 });
 </script>
